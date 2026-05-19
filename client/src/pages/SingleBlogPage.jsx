@@ -3,7 +3,7 @@ import { useGetBlogDetailsQuery, useGetBlogsQuery } from '../redux/slices/blogsA
 import { format } from 'date-fns';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-import { getImageUrl } from '../utils/image';
+import { getImageUrl, handleImgError } from '../utils/image';
 import {
   FiArrowLeft, FiClock, FiEye, FiHeart, FiBookmark,
   FiTwitter, FiGithub, FiLinkedin, FiCopy, FiCheck, FiList,
@@ -250,7 +250,7 @@ export default function SingleBlogPage() {
               {/* Author Card */}
               <div className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6">
                 <div className="flex items-center gap-4 mb-4">
-                  <img src={getImageUrl(blog.author?.avatar)} alt={blog.author?.name} className="w-14 h-14 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
+                  <img src={getImageUrl(blog.author?.avatar, blog.author?.name)} onError={handleImgError(blog.author?.name)} alt={blog.author?.name} className="w-14 h-14 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{blog.author?.name}</h3>
                     <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">Author</p>

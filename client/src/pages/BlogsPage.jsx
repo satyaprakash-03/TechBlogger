@@ -7,7 +7,7 @@ import {
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { useState, useMemo } from 'react';
-import { getImageUrl } from '../utils/image';
+import { getImageUrl, handleImgError } from '../utils/image';
 
 const readingTime = (content) => {
   const words = content?.replace(/<[^>]+>/g, '').split(/\s+/).length || 0;
@@ -94,7 +94,7 @@ export default function BlogsPage() {
                 <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-6 line-clamp-3 leading-relaxed">{featured.excerpt}</p>
                 <div className="flex items-center justify-between mt-auto border-t border-zinc-200 dark:border-zinc-800 pt-5">
                   <div className="flex items-center gap-2.5">
-                    <img src={getImageUrl(featured.author?.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
+                    <img src={getImageUrl(featured.author?.avatar, featured.author?.name)} onError={handleImgError(featured.author?.name)} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                     <div>
                       <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{featured.author?.name}</p>
                       <p className="text-xs text-zinc-600">{format(new Date(featured.createdAt), 'MMM dd, yyyy')} · {readingTime(featured.content)} min read</p>
@@ -237,7 +237,7 @@ export default function BlogsPage() {
                       <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-2 flex-grow leading-relaxed">{blog.excerpt}</p>
                       <div className="flex items-center justify-between pt-3.5 border-t border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center gap-2">
-                          <img src={getImageUrl(blog.author?.avatar)} alt="" className="w-6 h-6 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
+                          <img src={getImageUrl(blog.author?.avatar, blog.author?.name)} onError={handleImgError(blog.author?.name)} alt="" className="w-6 h-6 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                           <div>
                             <p className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">{blog.author?.name}</p>
                             <p className="text-[9px] text-zinc-600">{format(new Date(blog.createdAt), 'MMM dd, yyyy')}</p>
@@ -288,7 +288,7 @@ export default function BlogsPage() {
                       <p className="text-xs text-zinc-600 line-clamp-1 mb-2 leading-relaxed">{blog.excerpt}</p>
                       <div className="flex items-center gap-4 text-[10px] text-zinc-600">
                         <div className="flex items-center gap-1.5">
-                          <img src={getImageUrl(blog.author?.avatar)} alt="" className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 object-cover" />
+                          <img src={getImageUrl(blog.author?.avatar, blog.author?.name)} onError={handleImgError(blog.author?.name)} alt="" className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 object-cover" />
                           <span className="text-zinc-600 dark:text-zinc-400">{blog.author?.name}</span>
                         </div>
                         <span className="flex items-center gap-0.5"><FiClock size={9} /> {readingTime(blog.content)}m</span>

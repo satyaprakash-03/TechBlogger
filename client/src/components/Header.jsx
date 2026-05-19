@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoImg from '../assets/logo.png';
-import { getImageUrl } from '../utils/image';
+import { getImageUrl, handleImgError } from '../utils/image';
 
 const Header = () => {
   const { userInfo } = useSelector((state) => state.auth);
@@ -168,7 +168,7 @@ const Header = () => {
                 <button onClick={() => setDropOpen(!dropOpen)}
                   className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
                 >
-                  <img src={getImageUrl(userInfo.avatar)} alt="avatar" className="w-7 h-7 rounded-full object-cover ring-2 ring-violet-500/30" />
+                  <img src={getImageUrl(userInfo.avatar, userInfo.name)} onError={handleImgError(userInfo.name)} alt="avatar" className="w-7 h-7 rounded-full object-cover ring-2 ring-violet-500/30" />
                   <span className="text-sm text-zinc-600 dark:text-zinc-300 font-medium max-w-[72px] truncate">{userInfo.name?.split(' ')[0]}</span>
                   <FiChevronDown size={13} className={`text-zinc-400 dark:text-zinc-500 transition-transform ${dropOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -286,7 +286,7 @@ const Header = () => {
                 {userInfo ? (
                   <>
                     <div className="flex items-center gap-3 px-4 py-3 bg-zinc-100 dark:bg-zinc-800/60 rounded-xl">
-                      <img src={getImageUrl(userInfo.avatar)} alt="" className="w-9 h-9 rounded-full object-cover ring-2 ring-violet-500/30" />
+                      <img src={getImageUrl(userInfo.avatar, userInfo.name)} onError={handleImgError(userInfo.name)} alt="" className="w-9 h-9 rounded-full object-cover ring-2 ring-violet-500/30" />
                       <div>
                         <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{userInfo.name}</p>
                         <p className="text-xs text-zinc-400 dark:text-zinc-500">{userInfo.email}</p>

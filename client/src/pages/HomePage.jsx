@@ -8,7 +8,7 @@ import {
 import { useGetBlogsQuery, useGetTopWritersQuery } from '../redux/slices/blogsApiSlice';
 import { format } from 'date-fns';
 import { useState } from 'react';
-import { getImageUrl } from '../utils/image';
+import { getImageUrl, handleImgError } from '../utils/image';
 
 const readingTime = (content) => {
   const words = content?.replace(/<[^>]+>/g, '').split(/\s+/).length || 0;
@@ -202,7 +202,7 @@ export default function HomePage() {
                   <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-5 line-clamp-2 leading-relaxed flex-grow">{blog.excerpt}</p>
                   <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800">
                     <div className="flex items-center gap-2">
-                      <img src={getImageUrl(blog.author?.avatar)} alt="" className="w-7 h-7 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
+                      <img src={getImageUrl(blog.author?.avatar, blog.author?.name)} onError={handleImgError(blog.author?.name)} alt="" className="w-7 h-7 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                       <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">{blog.author?.name}</span>
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-zinc-600">
@@ -288,7 +288,7 @@ export default function HomePage() {
                   <p className="text-sm text-zinc-400 dark:text-zinc-500 line-clamp-2 mb-5">{blogs[3].excerpt}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img src={getImageUrl(blogs[3].author?.avatar)} alt="" className="w-7 h-7 rounded-full border border-zinc-300 dark:border-zinc-700 object-cover" />
+                      <img src={getImageUrl(blogs[3].author?.avatar, blogs[3].author?.name)} onError={handleImgError(blogs[3].author?.name)} alt="" className="w-7 h-7 rounded-full border border-zinc-300 dark:border-zinc-700 object-cover" />
                       <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{blogs[3].author?.name}</span>
                     </div>
                     <Link to={`/blogs/${blogs[3]._id}`} className="text-pink-400 text-sm font-semibold hover:text-pink-300 flex items-center gap-1 transition-colors">
@@ -360,7 +360,7 @@ export default function HomePage() {
                   >
                     {/* Avatar + Rank */}
                     <div className="relative inline-block mb-4 mx-auto">
-                      <img src={getImageUrl(writer.avatar)} alt={writer.name}
+                      <img src={getImageUrl(writer.avatar, writer.name)} onError={handleImgError(writer.name)} alt={writer.name}
                         className="w-20 h-20 rounded-full object-cover border-2 border-white dark:border-zinc-900 shadow-lg group-hover:border-emerald-400 transition-colors" />
                       <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900 text-[10px] font-bold">
                         #{i + 1}
