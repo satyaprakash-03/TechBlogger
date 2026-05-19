@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { useState, useMemo } from 'react';
+import { getImageUrl } from '../utils/image';
 
 const readingTime = (content) => {
   const words = content?.replace(/<[^>]+>/g, '').split(/\s+/).length || 0;
@@ -79,7 +80,7 @@ export default function BlogsPage() {
               className="group flex flex-col md:flex-row bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-violet-500/30 rounded-2xl overflow-hidden transition-all duration-300"
             >
               <div className="relative md:w-2/5 h-56 md:h-auto overflow-hidden">
-                <img src={featured.coverImage} alt={featured.title}
+                <img src={getImageUrl(featured.coverImage)} alt={featured.title}
                   className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-zinc-900/40 hidden md:block" />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 to-transparent md:hidden" />
@@ -93,7 +94,7 @@ export default function BlogsPage() {
                 <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-6 line-clamp-3 leading-relaxed">{featured.excerpt}</p>
                 <div className="flex items-center justify-between mt-auto border-t border-zinc-200 dark:border-zinc-800 pt-5">
                   <div className="flex items-center gap-2.5">
-                    <img src={featured.author?.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
+                    <img src={getImageUrl(featured.author?.avatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                     <div>
                       <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{featured.author?.name}</p>
                       <p className="text-xs text-zinc-600">{format(new Date(featured.createdAt), 'MMM dd, yyyy')} · {readingTime(featured.content)} min read</p>
@@ -214,7 +215,7 @@ export default function BlogsPage() {
                     className="card card-hover flex flex-col overflow-hidden group"
                   >
                     <div className="relative h-48 overflow-hidden">
-                      <img src={blog.coverImage} alt={blog.title}
+                      <img src={getImageUrl(blog.coverImage)} alt={blog.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/70 to-transparent" />
                       <span className="absolute top-3 left-3 badge badge-violet text-[9px] px-2">{blog.category}</span>
@@ -236,7 +237,7 @@ export default function BlogsPage() {
                       <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-2 flex-grow leading-relaxed">{blog.excerpt}</p>
                       <div className="flex items-center justify-between pt-3.5 border-t border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center gap-2">
-                          <img src={blog.author?.avatar} alt="" className="w-6 h-6 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
+                          <img src={getImageUrl(blog.author?.avatar)} alt="" className="w-6 h-6 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                           <div>
                             <p className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">{blog.author?.name}</p>
                             <p className="text-[9px] text-zinc-600">{format(new Date(blog.createdAt), 'MMM dd, yyyy')}</p>
@@ -274,7 +275,7 @@ export default function BlogsPage() {
                   <Link to={`/blogs/${blog._id}`}
                     className="group flex gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-violet-500/30 rounded-2xl transition-all duration-200 hover:bg-white dark:bg-zinc-900/80"
                   >
-                    <img src={blog.coverImage} alt={blog.title}
+                    <img src={getImageUrl(blog.coverImage)} alt={blog.title}
                       className="w-28 h-20 rounded-xl object-cover flex-shrink-0 group-hover:scale-102 transition-transform" />
                     <div className="flex-grow min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -287,7 +288,7 @@ export default function BlogsPage() {
                       <p className="text-xs text-zinc-600 line-clamp-1 mb-2 leading-relaxed">{blog.excerpt}</p>
                       <div className="flex items-center gap-4 text-[10px] text-zinc-600">
                         <div className="flex items-center gap-1.5">
-                          <img src={blog.author?.avatar} alt="" className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 object-cover" />
+                          <img src={getImageUrl(blog.author?.avatar)} alt="" className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 object-cover" />
                           <span className="text-zinc-600 dark:text-zinc-400">{blog.author?.name}</span>
                         </div>
                         <span className="flex items-center gap-0.5"><FiClock size={9} /> {readingTime(blog.content)}m</span>

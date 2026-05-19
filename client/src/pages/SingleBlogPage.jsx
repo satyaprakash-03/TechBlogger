@@ -3,6 +3,7 @@ import { useGetBlogDetailsQuery, useGetBlogsQuery } from '../redux/slices/blogsA
 import { format } from 'date-fns';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { getImageUrl } from '../utils/image';
 import {
   FiArrowLeft, FiClock, FiEye, FiHeart, FiBookmark,
   FiTwitter, FiGithub, FiLinkedin, FiCopy, FiCheck, FiList,
@@ -104,7 +105,7 @@ export default function SingleBlogPage() {
               {/* Cover Image */}
               {blog.coverImage && (
                 <div className="relative w-full aspect-video mb-6 md:mb-8 rounded-xl overflow-hidden shadow-sm">
-                  <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" loading="eager" />
+                  <img src={getImageUrl(blog.coverImage)} alt={blog.title} className="w-full h-full object-cover" loading="eager" />
                 </div>
               )}
 
@@ -226,7 +227,7 @@ export default function SingleBlogPage() {
                     <Link key={rb._id} to={`/blogs/${rb._id}`}
                       className="group flex flex-col bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                       <div className="aspect-[16/9] overflow-hidden">
-                        <img src={rb.coverImage} alt={rb.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={getImageUrl(rb.coverImage)} alt={rb.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       </div>
                       <div className="p-5 flex flex-col flex-grow">
                         <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-violet-600 transition-colors">{rb.title}</h4>
@@ -249,7 +250,7 @@ export default function SingleBlogPage() {
               {/* Author Card */}
               <div className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6">
                 <div className="flex items-center gap-4 mb-4">
-                  <img src={blog.author?.avatar} alt={blog.author?.name} className="w-14 h-14 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
+                  <img src={getImageUrl(blog.author?.avatar)} alt={blog.author?.name} className="w-14 h-14 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{blog.author?.name}</h3>
                     <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">Author</p>

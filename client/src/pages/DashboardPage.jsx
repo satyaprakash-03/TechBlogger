@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { getImageUrl } from '../utils/image';
 
 const DashboardPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
@@ -176,7 +177,7 @@ const DashboardPage = () => {
           <div className="bg-white dark:bg-zinc-900/40 p-6 sticky top-24 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl backdrop-blur-xl">
             <div className="flex flex-col items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-8 mb-6 relative">
               <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl"></div>
-              <img src={userInfo.avatar} alt="Profile" className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-md mb-4 object-cover relative z-10" />
+              <img src={getImageUrl(userInfo.avatar)} alt="Profile" className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-md mb-4 object-cover relative z-10" />
               <h3 className="text-zinc-900 dark:text-white font-bold text-xl">{userInfo.name}</h3>
               <p className="text-violet-600 dark:text-violet-400 text-sm font-medium capitalize mt-1">{userInfo.role}</p>
             </div>
@@ -258,7 +259,7 @@ const DashboardPage = () => {
                 {myBlogs.slice(0, 3).map(blog => (
                   <div key={blog._id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl mb-3 border border-zinc-100 dark:border-zinc-700/50">
                     <div className="flex items-center gap-4">
-                      <img src={blog.coverImage} className="w-16 h-16 rounded-xl object-cover" alt="cover" />
+                      <img src={getImageUrl(blog.coverImage)} className="w-16 h-16 rounded-xl object-cover" alt="cover" />
                       <div>
                         <h4 className="text-zinc-900 dark:text-white font-semibold line-clamp-1">{blog.title}</h4>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{format(new Date(blog.createdAt), 'MMM dd, yyyy')} • {blog.views} views</p>
@@ -374,7 +375,7 @@ const DashboardPage = () => {
                     <input type="file" onChange={(e) => uploadFileHandler(e, 'coverImage')} className="block w-full sm:w-auto text-sm text-zinc-500 dark:text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 dark:file:bg-violet-500/10 dark:file:text-violet-400 hover:file:bg-violet-100 dark:hover:file:bg-violet-500/20 transition-colors cursor-pointer" />
                     {formData.coverImage && (
                       <div className="relative w-full max-w-sm h-48 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                        <img src={formData.coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                        <img src={getImageUrl(formData.coverImage)} alt="Cover Preview" className="w-full h-full object-cover" />
                       </div>
                     )}
                   </div>
@@ -414,7 +415,7 @@ const DashboardPage = () => {
 
               <form onSubmit={handleProfileSubmit} className="max-w-2xl space-y-6">
                 <div className="flex flex-col sm:flex-row items-center gap-6 pb-8 border-b border-zinc-200 dark:border-zinc-800/60">
-                  <img src={profileData.avatar || userInfo.avatar} alt="Avatar Preview" className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-sm object-cover" />
+                  <img src={getImageUrl(profileData.avatar || userInfo.avatar)} alt="Avatar Preview" className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-sm object-cover" />
                   <div className="flex-grow w-full space-y-3">
                     <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Upload New Avatar</label>
                     <input type="file" onChange={(e) => uploadFileHandler(e, 'avatar')} className="block w-full text-sm text-zinc-500 dark:text-zinc-400 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-violet-50 file:text-violet-700 dark:file:bg-violet-500/10 dark:file:text-violet-400 hover:file:bg-violet-100 dark:hover:file:bg-violet-500/20 transition-colors cursor-pointer" />
