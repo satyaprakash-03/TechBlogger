@@ -2,7 +2,8 @@
 
 <div align="center">
 
-![TechBlogger Banner](./client/public/logo.png)
+![TechBlogger Banner](<./client/src/assets/Screenshot 2026-05-19 145144.png />
+)
 
 **A full-stack, engineering-focused blogging platform built for developers, by developers.**
 
