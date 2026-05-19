@@ -26,6 +26,7 @@ const registerUser = async (req, res) => {
         role: user.role,
         avatar: user.avatar,
         bio: user.bio,
+        designation: user.designation,
         socialLinks: user.socialLinks,
         token,
       });
@@ -51,6 +52,7 @@ const loginUser = async (req, res) => {
         role: user.role,
         avatar: user.avatar,
         bio: user.bio,
+        designation: user.designation,
         socialLinks: user.socialLinks,
         token,
       });
@@ -86,7 +88,8 @@ const updateUserProfile = async (req, res) => {
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
       user.avatar = req.body.avatar || user.avatar;
-      user.bio = req.body.bio || user.bio;
+      user.bio = req.body.bio !== undefined ? req.body.bio : user.bio;
+      user.designation = req.body.designation !== undefined ? req.body.designation : user.designation;
       
       if (req.body.socialLinks) {
         console.log('📥 socialLinks received:', JSON.stringify(req.body.socialLinks));
@@ -111,6 +114,7 @@ const updateUserProfile = async (req, res) => {
         role: updatedUser.role,
         avatar: updatedUser.avatar,
         bio: updatedUser.bio,
+        designation: updatedUser.designation,
         socialLinks: updatedUser.socialLinks,
         token: generateToken(updatedUser._id),
       });

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   avatar: { type: String, default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg' },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   bio: { type: String, default: '' },
+  designation: { type: String, default: '' },
   socialLinks: {
     twitter: { type: String, default: '' },
     github: { type: String, default: '' },

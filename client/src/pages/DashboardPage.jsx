@@ -34,6 +34,7 @@ const DashboardPage = () => {
     email: userInfo?.email || '', 
     avatar: userInfo?.avatar || '', 
     bio: userInfo?.bio || '', 
+    designation: userInfo?.designation || '',
     password: '',
     socialLinks: {
       twitter:  userInfo?.socialLinks?.twitter  || '',
@@ -174,14 +175,58 @@ const DashboardPage = () => {
         
         {/* Sidebar */}
         <div className="w-full lg:w-72 flex-shrink-0">
-          <div className="bg-white dark:bg-zinc-900/40 p-6 sticky top-24 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl backdrop-blur-xl">
-            <div className="flex flex-col items-center border-b border-zinc-200 dark:border-zinc-800/60 pb-8 mb-6 relative">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl"></div>
-              <img src={getImageUrl(userInfo.avatar, userInfo.name)} onError={handleImgError(userInfo.name)} alt="Profile" className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-md mb-4 object-cover relative z-10" />
-              <h3 className="text-zinc-900 dark:text-white font-bold text-xl">{userInfo.name}</h3>
-              <p className="text-violet-600 dark:text-violet-400 text-sm font-medium capitalize mt-1">{userInfo.role}</p>
+          <div className="sticky top-24 rounded-3xl overflow-hidden shadow-2xl border border-zinc-200/80 dark:border-zinc-700/50">
+            {/* Profile Card Header */}
+            <div className="relative bg-gray-300 dark:bg-zinc-800 px-6 pt-8 pb-14">
+              {/* Decorative blobs */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-x-8 -translate-y-8"></div>
+              <div className="absolute bottom-0 right-0 w-24 h-24 bg-indigo-400/20 rounded-full blur-xl translate-x-4 translate-y-4"></div>
+              {/* Avatar */}
+              <div className="flex flex-col items-center relative z-10">
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 rounded-full bg-white/30 blur-sm scale-110"></div>
+                  <img
+                    src={getImageUrl(userInfo.avatar, userInfo.name)}
+                    onError={handleImgError(userInfo.name)}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full border-4 border-white/90 shadow-xl object-cover relative z-10"
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-400 rounded-full border-2 border-white flex items-center justify-center z-20">
+                    <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+                  </div>
+                </div>
+                <h3 className="text-zinc-900 dark:text-white font-bold text-xl tracking-tight drop-shadow">{userInfo.name}</h3>
+                {userInfo.designation ? (
+                  <span className="mt-1.5 px-3 py-1 bg-black/5 dark:bg-white/20 backdrop-blur-sm border border-black/10 dark:border-white/30 text-zinc-800 dark:text-white/95 text-xs font-semibold rounded-full tracking-wide">
+                    {userInfo.designation}
+                  </span>
+                ) : (
+                  <span className="mt-1.5 px-3 py-1 bg-black/5 dark:bg-white/15 border border-black/10 dark:border-white/20 text-zinc-700 dark:text-white/70 text-xs font-medium rounded-full capitalize">
+                    {userInfo.role}
+                  </span>
+                )}
+              </div>
             </div>
-            <nav className="flex flex-col gap-2">
+
+            {/* Stats Strip */}
+            <div className="bg-white dark:bg-zinc-900 grid grid-cols-3 divide-x divide-zinc-100 dark:divide-zinc-800 -mt-6 mx-4 rounded-2xl shadow-lg border border-zinc-100 dark:border-zinc-800 relative z-10">
+              <div className="flex flex-col items-center py-3">
+                <span className="text-base font-bold text-zinc-900 dark:text-white">{myBlogs.length}</span>
+                <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">Posts</span>
+              </div>
+              <div className="flex flex-col items-center py-3">
+                <span className="text-base font-bold text-zinc-900 dark:text-white">{totalViews}</span>
+                <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">Views</span>
+              </div>
+              <div className="flex flex-col items-center py-3">
+                <span className="text-base font-bold text-zinc-900 dark:text-white">{totalLikes}</span>
+                <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">Likes</span>
+              </div>
+            </div>
+
+            {/* Nav */}
+            <div className="bg-white dark:bg-zinc-900/70 backdrop-blur-xl p-4 mt-0 rounded-b-3xl">
+            <nav className="flex flex-col gap-1.5 mt-2">
               <button 
                 onClick={() => setActiveTab('overview')}
                 className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'overview' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
@@ -207,6 +252,7 @@ const DashboardPage = () => {
                 <FiSettings size={18} /> Profile Settings
               </button>
             </nav>
+            </div>
           </div>
         </div>
 
@@ -432,6 +478,17 @@ const DashboardPage = () => {
                     <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Email Address</label>
                     <input type="email" value={profileData.email} onChange={e => setProfileData({...profileData, email: e.target.value})} className="input-field rounded-xl" />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Designation <span className="text-zinc-400 font-normal">(e.g. Full Stack Developer)</span></label>
+                  <input
+                    type="text"
+                    value={profileData.designation}
+                    onChange={e => setProfileData({...profileData, designation: e.target.value})}
+                    className="input-field rounded-xl"
+                    placeholder="Your professional title..."
+                  />
                 </div>
 
                 <div className="space-y-2">
