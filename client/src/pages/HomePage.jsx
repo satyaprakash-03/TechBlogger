@@ -52,7 +52,7 @@ export default function HomePage() {
     { name: 'AI / ML', full: 'AI & Machine Learning', icon: <FiCpu size={20} />, color: '#8b5cf6' },
     { name: 'DevOps', full: 'DevOps', icon: <FiServer size={20} />, color: '#f59e0b' },
     { name: 'UI/UX', full: 'UI/UX Design', icon: <FiPenTool size={20} />, color: '#ec4899' },
-    { name: 'Data Sci', full: 'Data Science', icon: <FiBookOpen size={20} />, color: '#06b6d4' },
+    { name: 'Data Science', full: 'Data Science', icon: <FiBookOpen size={20} />, color: '#06b6d4' },
   ];
 
   const trendingTags = ['React', 'TypeScript', 'Next.js', 'Node.js', 'Docker', 'Python', 'AWS', 'GraphQL', 'Rust', 'Go'];

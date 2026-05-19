@@ -83,7 +83,7 @@ const Footer = () => {
           </div>
           {/* Newsletter */}
           <div className="lg:col-span-1">
-            <h4 className="text-sm font-semibold text-white mb-6">Newsletter</h4>
+            <h4 className="text-sm font-semibold text-white mb-6">Subscribe for Newsletter</h4>
             <p className="text-sm text-zinc-400 mb-4 leading-relaxed">Get the best articles delivered to your inbox every week.</p>
             {subscribed ? (
               <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium px-4 py-3 rounded-xl flex items-center gap-2">
