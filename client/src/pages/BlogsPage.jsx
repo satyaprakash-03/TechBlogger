@@ -14,7 +14,7 @@ const readingTime = (content) => {
   return Math.max(1, Math.ceil(words / 200));
 };
 
-const CATEGORIES = ['All', 'Web Development', 'Mobile Dev', 'AI & Machine Learning', 'DevOps', 'UI/UX Design'];
+const CATEGORIES = ['All', 'Web Development', 'Mobile Dev', 'AI & Machine Learning', 'Data Science', 'Cloud Computing', 'DevOps', 'UI/UX Design', 'Cybersecurity', 'Blockchain', 'Game Development', 'Software Engineering', 'Embedded Systems'];
 
 export default function BlogsPage() {
   const { data: blogs, isLoading, error } = useGetBlogsQuery();

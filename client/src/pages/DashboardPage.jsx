@@ -405,8 +405,15 @@ const DashboardPage = () => {
                       <option>Web Development</option>
                       <option>Mobile Dev</option>
                       <option>AI & Machine Learning</option>
+                      <option>Data Science</option>
+                      <option>Cloud Computing</option>
                       <option>DevOps</option>
                       <option>UI/UX Design</option>
+                      <option>Cybersecurity</option>
+                      <option>Blockchain</option>
+                      <option>Game Development</option>
+                      <option>Software Engineering</option>
+                      <option>Embedded Systems</option>
                     </select>
                   </div>
                   <div className="space-y-2">

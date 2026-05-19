@@ -68,9 +68,9 @@ const Footer = () => {
             <ul className="space-y-4">
               {[
                 { label: 'Web Development', to: '/blogs?category=Web+Development' },
-                { label: 'AI & Machine Learning', to: '/blogs?category=AI' },
-                { label: 'DevOps', to: '/blogs?category=DevOps' },
-                { label: 'UI/UX Design', to: '/blogs?category=UI' },
+                { label: 'Data Science', to: '/blogs?category=Data+Science' },
+                { label: 'Cloud Computing', to: '/blogs?category=Cloud+Computing' },
+                { label: 'Cybersecurity', to: '/blogs?category=Cybersecurity' },
               ].map(({ label, to }) => (
                 <li key={label}>
                   <Link to={to} className="text-sm text-zinc-400 hover:text-violet-400 transition-colors flex items-center gap-2 group">

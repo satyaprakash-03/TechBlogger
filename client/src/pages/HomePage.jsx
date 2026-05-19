@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   FiSearch, FiArrowRight, FiMonitor, FiSmartphone, FiCpu,
   FiServer, FiPenTool, FiBookOpen, FiTrendingUp, FiClock,
-  FiEye, FiZap, FiUsers, FiStar, FiMail, FiLinkedin, FiGithub, FiInstagram, FiGlobe, FiTerminal
+  FiEye, FiZap, FiUsers, FiStar, FiMail, FiLinkedin, FiGithub, FiInstagram, FiGlobe, FiTerminal,
+  FiCloud, FiShield, FiLink, FiPlayCircle, FiCode
 } from 'react-icons/fi';
 import { useGetBlogsQuery, useGetTopWritersQuery } from '../redux/slices/blogsApiSlice';
 import { format } from 'date-fns';
@@ -50,9 +51,15 @@ export default function HomePage() {
     { name: 'Web Dev', full: 'Web Development', icon: <FiMonitor size={20} />, color: '#3b82f6' },
     { name: 'Mobile', full: 'Mobile Dev', icon: <FiSmartphone size={20} />, color: '#10b981' },
     { name: 'AI / ML', full: 'AI & Machine Learning', icon: <FiCpu size={20} />, color: '#8b5cf6' },
+    { name: 'Data Sci', full: 'Data Science', icon: <FiBookOpen size={20} />, color: '#06b6d4' },
+    { name: 'Cloud', full: 'Cloud Computing', icon: <FiCloud size={20} />, color: '#0ea5e9' },
     { name: 'DevOps', full: 'DevOps', icon: <FiServer size={20} />, color: '#f59e0b' },
     { name: 'UI/UX', full: 'UI/UX Design', icon: <FiPenTool size={20} />, color: '#ec4899' },
-    { name: 'Data Science', full: 'Data Science', icon: <FiBookOpen size={20} />, color: '#06b6d4' },
+    { name: 'Security', full: 'Cybersecurity', icon: <FiShield size={20} />, color: '#ef4444' },
+    { name: 'Blockchain', full: 'Blockchain', icon: <FiLink size={20} />, color: '#6366f1' },
+    { name: 'Game Dev', full: 'Game Development', icon: <FiPlayCircle size={20} />, color: '#84cc16' },
+    { name: 'Software Eng', full: 'Software Engineering', icon: <FiCode size={20} />, color: '#14b8a6' },
+    { name: 'IoT', full: 'Embedded Systems', icon: <FiCpu size={20} />, color: '#64748b' },
   ];
 
   const trendingTags = ['React', 'TypeScript', 'Next.js', 'Node.js', 'Docker', 'Python', 'AWS', 'GraphQL', 'Rust', 'Go'];
@@ -138,7 +145,7 @@ export default function HomePage() {
               { icon: <FiBookOpen size={20} />, value: `${blogs?.length || 0}+`, label: 'Articles Published', color: 'text-violet-500', bg: 'bg-violet-500/10', glow: 'group-hover:shadow-violet-500/20' },
               { icon: <FiEye size={20} />, value: `${(totalViews / 1000).toFixed(0)}K+`, label: 'Total Views', color: 'text-pink-500', bg: 'bg-pink-500/10', glow: 'group-hover:shadow-pink-500/20' },
               { icon: <FiUsers size={20} />, value: `${uniqueAuthors}+`, label: 'Active Writers', color: 'text-emerald-500', bg: 'bg-emerald-500/10', glow: 'group-hover:shadow-emerald-500/20' },
-              { icon: <FiStar size={20} />, value: '6', label: 'Categories', color: 'text-blue-500', bg: 'bg-blue-500/10', glow: 'group-hover:shadow-blue-500/20' },
+              { icon: <FiStar size={20} />, value: '12', label: 'Categories', color: 'text-blue-500', bg: 'bg-blue-500/10', glow: 'group-hover:shadow-blue-500/20' },
             ].map((s, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}

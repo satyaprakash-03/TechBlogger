@@ -1,13 +1,23 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMonitor, FiSmartphone, FiCpu, FiServer, FiPenTool } from 'react-icons/fi';
+import { 
+  FiMonitor, FiSmartphone, FiCpu, FiServer, FiPenTool, 
+  FiBookOpen, FiCloud, FiShield, FiLink, FiPlayCircle, FiCode 
+} from 'react-icons/fi';
 
 const categories = [
   { name: 'Web Development', icon: <FiMonitor size={32} />, color: 'from-blue-500 to-cyan-400', count: 12 },
   { name: 'Mobile Dev', icon: <FiSmartphone size={32} />, color: 'from-emerald-500 to-teal-400', count: 8 },
   { name: 'AI & Machine Learning', icon: <FiCpu size={32} />, color: 'from-purple-500 to-pink-500', count: 15 },
+  { name: 'Data Science', icon: <FiBookOpen size={32} />, color: 'from-cyan-500 to-blue-500', count: 10 },
+  { name: 'Cloud Computing', icon: <FiCloud size={32} />, color: 'from-sky-500 to-indigo-500', count: 7 },
   { name: 'DevOps', icon: <FiServer size={32} />, color: 'from-orange-500 to-red-500', count: 6 },
   { name: 'UI/UX Design', icon: <FiPenTool size={32} />, color: 'from-indigo-500 to-purple-500', count: 9 },
+  { name: 'Cybersecurity', icon: <FiShield size={32} />, color: 'from-red-500 to-rose-500', count: 5 },
+  { name: 'Blockchain', icon: <FiLink size={32} />, color: 'from-indigo-500 to-blue-500', count: 4 },
+  { name: 'Game Development', icon: <FiPlayCircle size={32} />, color: 'from-lime-500 to-green-500', count: 6 },
+  { name: 'Software Engineering', icon: <FiCode size={32} />, color: 'from-teal-500 to-emerald-500', count: 14 },
+  { name: 'Embedded Systems', icon: <FiCpu size={32} />, color: 'from-slate-500 to-gray-500', count: 3 },
 ];
 
 const CategoriesPage = () => {
