@@ -35,13 +35,17 @@ router.post('/', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
-  
-  // Create a URL for the uploaded file that works cross-domain
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? `https://${req.get('host')}` 
-    : `http://localhost:${process.env.PORT || 5000}`;
-  
+
+  // Use BACKEND_URL env var (set on Render) for reliable absolute URLs.
+  // Fallback to request host for local development.
+  const baseUrl =
+    process.env.BACKEND_URL ||
+    (process.env.NODE_ENV === 'production'
+      ? `https://${req.get('host')}`
+      : `http://localhost:${process.env.PORT || 5000}`);
+
   const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
   res.send({
     message: 'Image Uploaded',
     image: imageUrl,
