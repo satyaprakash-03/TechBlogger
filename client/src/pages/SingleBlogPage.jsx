@@ -253,7 +253,7 @@ export default function SingleBlogPage() {
                   <img src={getImageUrl(blog.author?.avatar, blog.author?.name)} onError={handleImgError(blog.author?.name)} alt={blog.author?.name} className="w-14 h-14 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">{blog.author?.name}</h3>
-                    <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">Author</p>
+                    <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">{blog.author?.designation || 'Author'}</p>
                   </div>
                 </div>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-5">

@@ -369,6 +369,9 @@ export default function HomePage() {
 
                     {/* Name & Stats */}
                     <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-0.5">{writer.name}</h3>
+                    {writer.designation && (
+                      <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 mb-1">{writer.designation}</p>
+                    )}
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">{writer.posts} article{writer.posts !== 1 ? 's' : ''} · {writer.totalViews} views</p>
 
                     {/* Tags */}

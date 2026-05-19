@@ -2,7 +2,7 @@ const Blog = require('../models/Blog');
 
 const getBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find({ isPublished: true }).populate('author', 'name avatar socialLinks').sort({ createdAt: -1 });
+    const blogs = await Blog.find({ isPublished: true }).populate('author', 'name avatar socialLinks designation bio').sort({ createdAt: -1 });
     res.json(blogs);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -11,7 +11,7 @@ const getBlogs = async (req, res) => {
 
 const getBlogById = async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id).populate('author', 'name avatar socialLinks');
+    const blog = await Blog.findById(req.params.id).populate('author', 'name avatar socialLinks designation bio');
     if (blog) {
       blog.views += 1;
       await blog.save();

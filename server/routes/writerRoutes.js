@@ -24,7 +24,7 @@ router.get('/top', async (req, res) => {
     // Fetch FRESH user data directly from User collection
     const writerIds = stats.map(s => s._id);
     const users = await User.find({ _id: { $in: writerIds } })
-      .select('name avatar bio socialLinks');
+      .select('name avatar bio socialLinks designation');
 
     // Merge stats with fresh user data
     const topWriters = stats.map(stat => {
@@ -38,6 +38,7 @@ router.get('/top', async (req, res) => {
         name: user.name,
         avatar: user.avatar,
         bio: user.bio,
+        designation: user.designation,
         socialLinks: user.socialLinks,   // ← FRESH from User collection, always up-to-date
         posts: stat.posts,
         totalViews: stat.totalViews,
