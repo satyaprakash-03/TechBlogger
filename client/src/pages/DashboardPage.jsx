@@ -139,7 +139,7 @@ const DashboardPage = () => {
         }
       };
       const res = await updateProfile(dataToSend).unwrap();
-      dispatch(setCredentials({ ...res }));
+      dispatch(setCredentials({ ...userInfo, ...res }));
       // Update local profileData with normalized URLs
       setProfileData(prev => ({ ...prev, socialLinks: dataToSend.socialLinks, password: '' }));
       toast.success('Profile updated! Social links will reflect on homepage shortly.');

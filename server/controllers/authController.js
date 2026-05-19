@@ -111,7 +111,8 @@ const updateUserProfile = async (req, res) => {
         role: updatedUser.role,
         avatar: updatedUser.avatar,
         bio: updatedUser.bio,
-        socialLinks: updatedUser.socialLinks
+        socialLinks: updatedUser.socialLinks,
+        token: generateToken(updatedUser._id),
       });
     } else {
       res.status(404).json({ message: 'User not found' });
