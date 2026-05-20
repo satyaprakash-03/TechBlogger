@@ -14,4 +14,7 @@ const blogSchema = new mongoose.Schema({
   isPublished: { type: Boolean, default: true },
 }, { timestamps: true });
 
+blogSchema.index({ isPublished: 1, createdAt: -1 });
+blogSchema.index({ author: 1 });
+
 module.exports = mongoose.model('Blog', blogSchema);

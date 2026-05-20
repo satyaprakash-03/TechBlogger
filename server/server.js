@@ -38,6 +38,9 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/techblogger
 const path = require('path');
 
 // Routes (to be added)
+app.get('/api/ping', (req, res) => {
+  res.status(200).json({ message: 'Server is awake' });
+});
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));

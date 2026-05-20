@@ -3,9 +3,18 @@ const router = express.Router();
 const Blog = require('../models/Blog');
 const User = require('../models/User');
 
+// Simple in-memory cache for top writers to avoid heavy aggregation on every page load
+let cachedTopWriters = null;
+let cacheExpirationTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 // GET /api/writers/top — Top writers with FRESH socialLinks directly from User collection
 router.get('/top', async (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedTopWriters && now < cacheExpirationTime) {
+      return res.json(cachedTopWriters);
+    }
     // Aggregate: count blogs & total views per author
     const stats = await Blog.aggregate([
       { $match: { isPublished: true } },
@@ -45,6 +54,9 @@ router.get('/top', async (req, res) => {
         tags: uniqueTags,
       };
     }).filter(Boolean);
+
+    cachedTopWriters = topWriters;
+    cacheExpirationTime = now + CACHE_DURATION;
 
     res.json(topWriters);
   } catch (error) {

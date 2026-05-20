@@ -13,9 +13,11 @@ const getBlogById = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id).populate('author', 'name avatar socialLinks designation bio');
     if (blog) {
-      blog.views += 1;
-      await blog.save();
       res.json(blog);
+      // Asynchronously update views in the background
+      Blog.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }).catch(err => {
+        console.error('Background view update error:', err);
+      });
     } else {
       res.status(404).json({ message: 'Blog not found' });
     }
