@@ -24,8 +24,14 @@ const Header = () => {
   const dropRef = useRef(null);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', fn);
+    const fn = () => {
+      const isScrolled = window.scrollY > 10;
+      setScrolled((prev) => {
+        if (prev !== isScrolled) return isScrolled;
+        return prev;
+      });
+    };
+    window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
@@ -237,7 +243,8 @@ const Header = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-slate-100 dark:bg-zinc-950/98 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800 overflow-hidden"
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="md:hidden bg-slate-100 dark:bg-zinc-950/98 border-t border-zinc-200 dark:border-zinc-800 overflow-hidden"
           >
             <div className="px-5 py-5 space-y-1">
               {[

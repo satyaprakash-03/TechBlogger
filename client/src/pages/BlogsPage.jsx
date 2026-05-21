@@ -110,7 +110,7 @@ export default function BlogsPage() {
         )}
 
         {/* Filters */}
-        <div className="sticky top-16 z-40 bg-slate-100 dark:bg-zinc-950/90 backdrop-blur-xl py-4 mb-8 -mx-5 md:-mx-8 px-5 md:px-8 border-y border-zinc-200 dark:border-zinc-800/60">
+        <div className="sticky top-16 z-40 bg-slate-100 dark:bg-zinc-950/90 py-4 mb-8 -mx-5 md:-mx-8 px-5 md:px-8 border-y border-zinc-200 dark:border-zinc-800/60">
           <div className="flex flex-col gap-3">
             {/* Row 1: Search + Sort + View */}
             <div className="flex flex-col sm:flex-row gap-3">
