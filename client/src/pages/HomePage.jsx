@@ -6,10 +6,11 @@ import {
   FiEye, FiZap, FiUsers, FiStar, FiMail, FiLinkedin, FiGithub, FiInstagram, FiGlobe, FiTerminal,
   FiCloud, FiShield, FiLink, FiPlayCircle, FiCode
 } from 'react-icons/fi';
-import { useGetBlogsQuery, useGetTopWritersQuery } from '../redux/slices/blogsApiSlice';
+import { useGetBlogsQuery, useGetTopWritersQuery, useSubscribeNewsletterMutation } from '../redux/slices/blogsApiSlice';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { getImageUrl, handleImgError } from '../utils/image';
+import { toast } from 'react-toastify';
 
 const readingTime = (content) => {
   const words = content?.replace(/<[^>]+>/g, '').split(/\s+/).length || 0;
@@ -41,6 +42,20 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    try {
+      await subscribeNewsletter(email).unwrap();
+      setSubscribed(true);
+      setEmail('');
+      toast.success('Thank you for subscribing to our newsletter!');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to subscribe');
+    }
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -640,13 +655,15 @@ export default function HomePage() {
               </motion.div>
             ) : (
               <div className="w-full max-w-lg mx-auto">
-                <form onSubmit={e => { e.preventDefault(); if (email.trim()) { setSubscribed(true); setEmail(''); } }} className="flex flex-col sm:flex-row gap-3">
+                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
                   <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
                     placeholder="Enter your email"
+                    disabled={isSubscribing}
                     className="flex-1 px-5 py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm" />
                   <button type="submit"
-                    className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all active:scale-[0.98] whitespace-nowrap shadow-sm">
-                    Subscribe
+                    disabled={isSubscribing}
+                    className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all active:scale-[0.98] whitespace-nowrap shadow-sm disabled:opacity-50">
+                    {isSubscribing ? 'Subscribing...' : 'Subscribe'}
                   </button>
                 </form>
               </div>

@@ -45,6 +45,9 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/writers', require('./routes/writerRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/newsletter', require('./routes/newsletterRoutes'));
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));

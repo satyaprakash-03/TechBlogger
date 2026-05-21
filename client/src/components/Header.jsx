@@ -2,8 +2,15 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLogoutMutation } from '../redux/slices/usersApiSlice';
 import { logout } from '../redux/slices/authSlice';
-import { FiMenu, FiX, FiSearch, FiEdit3, FiLogOut, FiGrid, FiSettings, FiChevronDown, FiSun, FiMoon, FiBell, FiBookmark, FiCompass, FiMail, FiBookOpen } from 'react-icons/fi';
+import { FiMenu, FiX, FiSearch, FiEdit3, FiLogOut, FiGrid, FiSettings, FiChevronDown, FiSun, FiMoon, FiBell, FiBookmark, FiCompass, FiMail, FiBookOpen, FiUser, FiInfo, FiTrash2, FiHeart } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
+import {
+  useGetNotificationsQuery,
+  useMarkAsReadMutation,
+  useMarkAllAsReadMutation,
+  useDeleteNotificationMutation,
+  useClearAllNotificationsMutation
+} from '../redux/slices/notificationsApiSlice';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoImg from '../assets/logo.png';
@@ -23,6 +30,35 @@ const Header = () => {
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  const { data: notifications = [] } = useGetNotificationsQuery(undefined, {
+    skip: !userInfo,
+    pollingInterval: 15000,
+  });
+
+  const [markAsRead] = useMarkAsReadMutation();
+  const [markAllAsRead] = useMarkAllAsReadMutation();
+  const [deleteNotification] = useDeleteNotificationMutation();
+  const [clearAllNotifications] = useClearAllNotificationsMutation();
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleNotificationClick = async (notif) => {
+    try {
+      if (!notif.isRead) {
+        await markAsRead(notif._id).unwrap();
+      }
+      setNotifOpen(false);
+      if (notif.link) {
+        navigate(notif.link);
+      }
+    } catch (err) {
+      console.error('Failed to click notification:', err);
+    }
+  };
+
   useEffect(() => {
     const fn = () => {
       const isScrolled = window.scrollY > 10;
@@ -40,6 +76,7 @@ const Header = () => {
   useEffect(() => {
     const fn = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
     };
     document.addEventListener('mousedown', fn);
     return () => document.removeEventListener('mousedown', fn);
@@ -158,11 +195,140 @@ const Header = () => {
 
           {userInfo ? (
             <>
-              {/* Notification Bell Feature */}
-              <button className="relative w-10 h-10 flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                <FiBell size={18} />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-pink-500 rounded-full ring-2 ring-white dark:ring-[#09090b]"></span>
-              </button>
+              {/* Notification Bell Popover */}
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative w-10 h-10 flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <FiBell size={18} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 px-1 text-[8px] font-bold text-white bg-pink-500 rounded-full min-w-[13px] h-[13px] flex items-center justify-center ring-1 ring-white dark:ring-[#09090b]">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {notifOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50"
+                    >
+                      {/* Popover Header */}
+                      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Notifications</h4>
+                          {unreadCount > 0 && (
+                            <span className="bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 text-xs px-2 py-0.5 rounded-full font-semibold">
+                              {unreadCount} new
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={() => markAllAsRead()}
+                              className="text-xs font-semibold text-violet-600 hover:text-violet-500 transition-colors"
+                            >
+                              Mark all as read
+                            </button>
+                          )}
+                          {notifications.length > 0 && (
+                            <button
+                              onClick={() => clearAllNotifications()}
+                              className="text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                            >
+                              Clear all
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Notifications List */}
+                      <div className="max-h-[360px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800 scrollbar-thin">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <FiBell className="w-8 h-8 text-zinc-300 dark:text-zinc-700 mx-auto mb-2" />
+                            <p className="text-zinc-400 dark:text-zinc-500 text-sm">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => {
+                            let NotifIcon = FiInfo;
+                            let iconBg = 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400';
+                            if (notif.type === 'like') {
+                              NotifIcon = FiHeart;
+                              iconBg = 'bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400';
+                            } else if (notif.type === 'publish') {
+                              NotifIcon = FiBookOpen;
+                              iconBg = 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400';
+                            } else if (notif.type === 'register') {
+                              NotifIcon = FiUser;
+                              iconBg = 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400';
+                            }
+
+                            return (
+                              <div
+                                key={notif._id}
+                                onClick={() => handleNotificationClick(notif)}
+                                className={`group p-4 flex gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer ${!notif.isRead ? 'bg-violet-50/30 dark:bg-violet-500/5' : ''}`}
+                              >
+                                <div className="flex-shrink-0">
+                                  {notif.sender ? (
+                                    <img
+                                      src={getImageUrl(notif.sender.avatar, notif.sender.name)}
+                                      onError={handleImgError(notif.sender.name)}
+                                      alt="avatar"
+                                      className="w-9 h-9 rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-800"
+                                    />
+                                  ) : (
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${iconBg}`}>
+                                      <NotifIcon size={16} />
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex-grow min-w-0">
+                                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+                                      {notif.title}
+                                    </p>
+                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                                      {new Date(notif.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                    {notif.message}
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-col items-center justify-between gap-2 flex-shrink-0">
+                                  {!notif.isRead && (
+                                    <span className="w-2.5 h-2.5 bg-violet-600 rounded-full"></span>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notif._id);
+                                    }}
+                                    className="p-1 text-zinc-400 hover:text-red-500 rounded transition-colors lg:opacity-0 lg:group-hover:opacity-100"
+                                    title="Delete notification"
+                                  >
+                                    <FiTrash2 size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               <Link to="/dashboard"
                 className="hidden lg:flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 rounded-full shadow-lg shadow-violet-500/25 transition-all active:scale-95 border border-violet-500/50"

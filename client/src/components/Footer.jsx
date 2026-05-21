@@ -2,10 +2,26 @@ import { Link } from 'react-router-dom';
 import logoImg from '../assets/logo.png';
 import { FiTwitter, FiGithub, FiLinkedin, FiMail, FiArrowRight } from 'react-icons/fi';
 import { useState } from 'react';
+import { useSubscribeNewsletterMutation } from '../redux/slices/blogsApiSlice';
+import { toast } from 'react-toastify';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    try {
+      await subscribeNewsletter(email).unwrap();
+      setSubscribed(true);
+      setEmail('');
+      toast.success('Thank you for subscribing to our newsletter!');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to subscribe');
+    }
+  };
 
   return (
     <footer className="relative mt-20 border-t border-zinc-800/60 bg-[#09090b] overflow-hidden">
@@ -91,18 +107,20 @@ const Footer = () => {
                 Thanks for subscribing!
               </div>
             ) : (
-              <form onSubmit={e => { e.preventDefault(); if (email.trim()) { setSubscribed(true); setEmail(''); } }} className="space-y-3">
+              <form onSubmit={handleSubscribe} className="space-y-3">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <FiMail className="text-zinc-500 group-focus-within:text-violet-400 transition-colors" size={16} />
                   </div>
                   <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all" />
+                    disabled={isSubscribing}
+                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all disabled:opacity-50" />
                 </div>
                 <button type="submit"
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-zinc-200 text-zinc-900 text-sm font-semibold rounded-xl transition-all active:scale-[0.98]">
-                  Subscribe <FiArrowRight size={16} />
+                  disabled={isSubscribing}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-zinc-200 text-zinc-900 text-sm font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50">
+                  {isSubscribing ? 'Subscribing...' : 'Subscribe'} <FiArrowRight size={16} />
                 </button>
               </form>
             )}

@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
-import { useGetBlogDetailsQuery, useGetBlogsQuery } from '../redux/slices/blogsApiSlice';
+import { useGetBlogDetailsQuery, useGetBlogsQuery, useLikeBlogMutation } from '../redux/slices/blogsApiSlice';
+import { useSelector } from 'react-redux';
 import { format } from 'date-fns';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
@@ -22,7 +23,9 @@ export default function SingleBlogPage() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
 
-  const [liked, setLiked] = useState(false);
+  const { userInfo } = useSelector((state) => state.auth);
+  const [likeBlog] = useLikeBlogMutation();
+
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [tocItems, setTocItems] = useState([]);
@@ -30,6 +33,16 @@ export default function SingleBlogPage() {
   const contentRef = useRef(null);
 
   const rt = readingTime(blog?.content);
+  const isLiked = blog && userInfo && blog.likes?.includes(userInfo._id);
+
+  const handleLike = async () => {
+    if (!userInfo) return;
+    try {
+      await likeBlog(id).unwrap();
+    } catch (err) {
+      console.error('Failed to like blog:', err);
+    }
+  };
 
   useEffect(() => {
     if (blog?.content && contentRef.current) {
@@ -120,8 +133,8 @@ export default function SingleBlogPage() {
                   <span>{rt} mins read</span>
                 </div>
                 <div className="flex items-center text-zinc-600 dark:text-zinc-400 font-medium">
-                  <FiHeart className={`w-4 h-4 mr-2 flex-shrink-0 ${liked ? 'fill-pink-500 text-pink-500' : ''}`} />
-                  <span>{blog.likes || 0} Likes</span>
+                  <FiHeart className={`w-4 h-4 mr-2 flex-shrink-0 ${isLiked ? 'fill-pink-500 text-pink-500' : ''}`} />
+                  <span>{blog.likes?.length || 0} Likes</span>
                 </div>
                 <div className="flex items-center text-zinc-600 dark:text-zinc-400 font-medium">
                   <FiEye className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -144,8 +157,13 @@ export default function SingleBlogPage() {
                 ))}
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setLiked(!liked)} className={`btn-secondary !px-4 ${liked ? '!border-pink-500 !text-pink-600' : ''}`}>
-                  <FiHeart className={liked ? 'fill-current' : ''} /> {liked ? 'Liked' : 'Like'}
+                <button 
+                  onClick={handleLike} 
+                  disabled={!userInfo}
+                  className={`btn-secondary !px-4 ${isLiked ? '!border-pink-500 !text-pink-600' : ''}`}
+                  title={!userInfo ? "Log in to like this blog" : ""}
+                >
+                  <FiHeart className={isLiked ? 'fill-current text-pink-500' : ''} /> {isLiked ? 'Liked' : 'Like'}
                 </button>
                 <button onClick={copyLink} className="btn-secondary !px-4">
                   {copied ? <FiCheck className="text-green-500" /> : <FiCopy />} {copied ? 'Copied' : 'Share'}

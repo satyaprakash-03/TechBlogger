@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useCreateBlogMutation, useGetBlogsQuery, useUpdateBlogMutation, useDeleteBlogMutation } from '../redux/slices/blogsApiSlice';
-import { useUpdateUserMutation, useUploadImageMutation } from '../redux/slices/usersApiSlice';
+import { useUpdateUserMutation, useUploadImageMutation, useGetUsersQuery, useDeleteUserMutation, useUpdateUserByAdminMutation } from '../redux/slices/usersApiSlice';
+import { 
+  useGetDbStatsQuery,
+  useBackupDbMutation,
+  useRestoreDbMutation,
+  useGetCollectionDocumentsQuery,
+  useCreateCollectionDocumentMutation,
+  useUpdateCollectionDocumentMutation,
+  useDeleteCollectionDocumentMutation
+} from '../redux/slices/adminApiSlice';
 import { setCredentials } from '../redux/slices/authSlice';
 import { toast } from 'react-toastify';
-import { FiPlus, FiList, FiSettings, FiPieChart, FiEye, FiHeart, FiMessageSquare, FiUpload, FiLinkedin, FiGithub, FiGlobe } from 'react-icons/fi';
+import { FiPlus, FiList, FiSettings, FiPieChart, FiEye, FiHeart, FiMessageSquare, FiUpload, FiLinkedin, FiGithub, FiGlobe, FiLayers, FiUsers, FiDatabase, FiRefreshCw, FiDownload, FiUploadCloud, FiTrash2, FiEdit, FiTerminal } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import ReactQuill from 'react-quill-new';
@@ -13,6 +22,7 @@ import { getImageUrl, handleImgError } from '../utils/image';
 
 const DashboardPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
+  const isAdmin = userInfo?.role === 'admin' && userInfo?.email === 'satyaprakash.in33@gmail.com';
   const dispatch = useDispatch();
   const { data: blogs, refetch } = useGetBlogsQuery();
   const [createBlog, { isLoading: isCreating }] = useCreateBlogMutation();
@@ -21,7 +31,43 @@ const DashboardPage = () => {
   const [updateProfile, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
 
+  // Admin-only RTK Query & Mutation Hooks
+  const { data: users, refetch: refetchUsers } = useGetUsersQuery(undefined, { skip: !isAdmin });
+  const [deleteUser] = useDeleteUserMutation();
+  const [updateUserByAdmin] = useUpdateUserByAdminMutation();
+
+  // Database Administration Panel Hooks & States
+  const { data: dbStats, refetch: refetchDbStats, isLoading: isStatsLoading } = useGetDbStatsQuery(undefined, { skip: !isAdmin });
+  const [backupDb, { isLoading: isBackingUp }] = useBackupDbMutation();
+  const [restoreDb, { isLoading: isRestoring }] = useRestoreDbMutation();
+
+  const [dbCollection, setDbCollection] = useState('users');
+  const [dbSearch, setDbSearch] = useState('');
+  const [dbPage, setDbPage] = useState(1);
+  const [dbLimit] = useState(10);
+
+  const { data: dbDocsData, refetch: refetchDbDocs, isLoading: isDocsLoading } = useGetCollectionDocumentsQuery(
+    { collectionName: dbCollection, search: dbSearch, page: dbPage, limit: dbLimit },
+    { skip: !isAdmin || !dbCollection }
+  );
+
+  const [createCollectionDoc] = useCreateCollectionDocumentMutation();
+  const [updateCollectionDoc] = useUpdateCollectionDocumentMutation();
+  const [deleteCollectionDoc] = useDeleteCollectionDocumentMutation();
+
+  // Database JSON Editor Modals State
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [dbModalMode, setDbModalMode] = useState('create'); // 'create', 'edit'
+  const [selectedDocId, setSelectedDocId] = useState(null);
+  const [rawJsonText, setRawJsonText] = useState('');
+
+  // Warning Restore Modal State
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restoreConfirmationText, setRestoreConfirmationText] = useState('');
+  const [restoreFileJson, setRestoreFileJson] = useState(null);
+
   const [activeTab, setActiveTab] = useState('overview');
+  const [returnTab, setReturnTab] = useState('articles');
   
   // Blog Form State
   const [editingBlogId, setEditingBlogId] = useState(null);
@@ -83,7 +129,7 @@ const DashboardPage = () => {
       }
       
       resetForm();
-      setActiveTab('articles');
+      setActiveTab(returnTab);
       refetch();
     } catch (err) {
       toast.error(err?.data?.message || err.error);
@@ -96,6 +142,7 @@ const DashboardPage = () => {
   };
 
   const handleEditClick = (blog) => {
+    setReturnTab(activeTab);
     setEditingBlogId(blog._id);
     setFormData({
       title: blog.title,
@@ -113,6 +160,29 @@ const DashboardPage = () => {
       try {
         await deleteBlog(id).unwrap();
         toast.success('Article deleted successfully!');
+        refetch();
+      } catch (err) {
+        toast.error(err?.data?.message || err.error);
+      }
+    }
+  };
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await updateUserByAdmin({ id: userId, data: { role: newRole } }).unwrap();
+      toast.success('User role updated successfully!');
+      refetchUsers();
+    } catch (err) {
+      toast.error(err?.data?.message || err.error);
+    }
+  };
+
+  const handleUserDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user? All their articles will also be deleted. This cannot be undone.')) {
+      try {
+        await deleteUser(userId).unwrap();
+        toast.success('User and their articles deleted successfully!');
+        refetchUsers();
         refetch();
       } catch (err) {
         toast.error(err?.data?.message || err.error);
@@ -164,6 +234,141 @@ const DashboardPage = () => {
       }
     } catch (err) {
       toast.error(err?.data?.message || err.error);
+    }
+  };
+
+  // Database Admin Handler Functions
+  const handleBackupDownload = async () => {
+    try {
+      const res = await backupDb().unwrap();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `techblogger-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      toast.success("Database backup downloaded successfully!");
+    } catch (err) {
+      toast.error(err?.data?.message || "Failed to generate backup.");
+    }
+  };
+
+  const handleFileImport = (e) => {
+    const fileReader = new FileReader();
+    if (e.target.files && e.target.files[0]) {
+      fileReader.readAsText(e.target.files[0], "UTF-8");
+      fileReader.onload = (event) => {
+        try {
+          const parsedJson = JSON.parse(event.target.result);
+          if (!parsedJson.users || !parsedJson.blogs) {
+            toast.error("Invalid file format. Backup file must contain 'users' and 'blogs' keys.");
+            return;
+          }
+          setRestoreFileJson(parsedJson);
+          setRestoreConfirmationText('');
+          setIsRestoreModalOpen(true);
+        } catch (error) {
+          toast.error("Failed to parse JSON file.");
+        }
+      };
+    }
+  };
+
+  const handleConfirmRestore = async () => {
+    if (restoreConfirmationText !== 'RESTORE') {
+      toast.error("Please type RESTORE to confirm.");
+      return;
+    }
+    try {
+      await restoreDb(restoreFileJson).unwrap();
+      toast.success("Database restored successfully! Logging you out to refresh status...");
+      setIsRestoreModalOpen(false);
+      setRestoreFileJson(null);
+      refetchDbStats();
+      
+      // Log out and reload
+      setTimeout(() => {
+        dispatch(setCredentials(null));
+        localStorage.removeItem('userInfo');
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      toast.error(err?.data?.message || "Restore failed.");
+    }
+  };
+
+  const handleAddDocClick = () => {
+    setDbModalMode('create');
+    setSelectedDocId(null);
+    const template = dbCollection === 'users' ? {
+      name: '',
+      email: '',
+      password: '',
+      role: 'user',
+      designation: '',
+      bio: '',
+      avatar: ''
+    } : {
+      title: '',
+      excerpt: '',
+      content: '',
+      category: 'Web Development',
+      tags: [],
+      coverImage: '',
+      views: 0,
+      isPublished: true,
+      author: userInfo?._id
+    };
+    setRawJsonText(JSON.stringify(template, null, 2));
+    setIsDbModalOpen(true);
+  };
+
+  const handleEditDocClick = (doc) => {
+    setDbModalMode('edit');
+    setSelectedDocId(doc._id);
+    const copy = { ...doc };
+    delete copy.__v;
+    setRawJsonText(JSON.stringify(copy, null, 2));
+    setIsDbModalOpen(true);
+  };
+
+  const handleSaveDbDoc = async () => {
+    try {
+      const parsedData = JSON.parse(rawJsonText);
+      if (dbModalMode === 'create') {
+        await createCollectionDoc({ collectionName: dbCollection, data: parsedData }).unwrap();
+        toast.success("Document created successfully!");
+      } else {
+        await updateCollectionDoc({ collectionName: dbCollection, id: selectedDocId, data: parsedData }).unwrap();
+        toast.success("Document updated successfully!");
+      }
+      setIsDbModalOpen(false);
+      refetchDbDocs();
+      refetchDbStats();
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        toast.error("Invalid JSON syntax. Please check your commas, braces, and quotes.");
+      } else {
+        toast.error(err?.data?.message || err.error || "Operation failed.");
+      }
+    }
+  };
+
+  const handleDeleteDbDoc = async (id) => {
+    const warningText = dbCollection === 'users' 
+      ? "Are you sure you want to delete this user? This will cascade delete all blogs authored by this user!" 
+      : "Are you sure you want to delete this document?";
+      
+    if (window.confirm(warningText)) {
+      try {
+        await deleteCollectionDoc({ collectionName: dbCollection, id }).unwrap();
+        toast.success("Document deleted successfully!");
+        refetchDbDocs();
+        refetchDbStats();
+      } catch (err) {
+        toast.error(err?.data?.message || "Failed to delete document.");
+      }
     }
   };
 
@@ -239,6 +444,28 @@ const DashboardPage = () => {
               >
                 <FiList size={18} /> My Articles
               </button>
+              {isAdmin && (
+                <>
+                  <button 
+                    onClick={() => setActiveTab('all-articles')}
+                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'all-articles' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
+                  >
+                    <FiLayers size={18} /> All Articles
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('users')}
+                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'users' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
+                  >
+                    <FiUsers size={18} /> Manage Users
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('db-admin')}
+                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'db-admin' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
+                  >
+                    <FiDatabase size={18} /> Database Admin
+                  </button>
+                </>
+              )}
               <button 
                 onClick={() => { resetForm(); setActiveTab('create'); }}
                 className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'create' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
@@ -375,6 +602,419 @@ const DashboardPage = () => {
                   </table>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeTab === 'all-articles' && isAdmin && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-zinc-900/40 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-1">Platform Articles</h2>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Admin Panel: Manage, edit or delete any blog post on the platform.</p>
+                </div>
+              </div>
+              
+              {blogs?.length === 0 ? (
+                <div className="text-center py-16 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-200 dark:border-zinc-700 border-dashed">
+                  <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 text-zinc-400 dark:text-zinc-500">
+                    <FiList size={24} />
+                  </div>
+                  <h3 className="text-zinc-900 dark:text-white font-semibold mb-2">No Articles Yet</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">No articles have been written on the platform yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                  <table className="w-full text-left text-sm text-zinc-600 dark:text-zinc-400">
+                    <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800">
+                      <tr>
+                        <th className="px-6 py-4 font-semibold">Article Title</th>
+                        <th className="px-6 py-4 font-semibold">Author</th>
+                        <th className="px-6 py-4 font-semibold">Category</th>
+                        <th className="px-6 py-4 font-semibold">Date</th>
+                        <th className="px-6 py-4 font-semibold">Stats</th>
+                        <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                      {blogs?.map(blog => (
+                        <tr key={blog._id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors bg-white dark:bg-transparent">
+                          <td className="px-6 py-4">
+                            <p className="font-semibold text-zinc-900 dark:text-white line-clamp-1 w-64">{blog.title}</p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
+                            {blog.author?.name || 'Unknown'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-700">{blog.category}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">{format(new Date(blog.createdAt), 'MMM dd, yyyy')}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-medium"><FiEye className="text-zinc-400 dark:text-zinc-500" /> {blog.views}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <button onClick={() => handleEditClick(blog)} className="text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors mr-4 font-semibold">Edit</button>
+                            <button onClick={() => handleDeleteClick(blog._id)} className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors font-semibold">Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === 'users' && isAdmin && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-zinc-900/40 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-1">User Management</h2>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Admin Panel: View, update roles, or delete user accounts on the platform.</p>
+                </div>
+              </div>
+              
+              {!users || users.length === 0 ? (
+                <div className="text-center py-16 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-200 dark:border-zinc-700 border-dashed">
+                  <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 text-zinc-400 dark:text-zinc-500">
+                    <FiUsers size={24} />
+                  </div>
+                  <h3 className="text-zinc-900 dark:text-white font-semibold mb-2">No Users Found</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">No registered users exist in the database.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                  <table className="w-full text-left text-sm text-zinc-600 dark:text-zinc-400">
+                    <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800">
+                      <tr>
+                        <th className="px-6 py-4 font-semibold">User</th>
+                        <th className="px-6 py-4 font-semibold">Email</th>
+                        <th className="px-6 py-4 font-semibold">Joined Date</th>
+                        <th className="px-6 py-4 font-semibold">Designation</th>
+                        <th className="px-6 py-4 font-semibold">Role</th>
+                        <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                      {users.map(user => (
+                        <tr key={user._id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors bg-white dark:bg-transparent">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <img 
+                                src={getImageUrl(user.avatar, user.name)} 
+                                onError={handleImgError(user.name)} 
+                                className="w-8 h-8 rounded-full object-cover" 
+                                alt={user.name} 
+                              />
+                              <p className="font-semibold text-zinc-900 dark:text-white">{user.name}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-zinc-700 dark:text-zinc-300 font-medium">
+                            {user.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                            {user.createdAt ? format(new Date(user.createdAt), 'MMM dd, yyyy') : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 text-zinc-550 dark:text-zinc-400 font-medium">
+                            {user.designation || '-'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <select 
+                              value={user.role} 
+                              disabled={user._id === userInfo._id} 
+                              onChange={(e) => handleRoleChange(user._id, e.target.value)} 
+                              className="bg-zinc-150 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3 py-1.5 rounded-full text-xs font-semibold border border-zinc-250 dark:border-zinc-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <option value="user">User</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          </td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <button 
+                              onClick={() => handleUserDelete(user._id)} 
+                              disabled={user._id === userInfo._id} 
+                              className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 disabled:text-zinc-300 dark:disabled:text-zinc-700 disabled:cursor-not-allowed transition-colors font-semibold"
+                            >
+                              Delete Account
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === 'db-admin' && isAdmin && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+              {/* DB Header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-3xl font-extrabold text-zinc-900 dark:text-white mb-1 tracking-tight flex items-center gap-3">
+                    <FiDatabase className="text-violet-500" /> Database Administration
+                  </h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">Monitor collections, backup/restore data, and execute CRUD operations on MongoDB.</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => { refetchDbStats(); refetchDbDocs(); }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-200 rounded-xl transition-all border border-zinc-200 dark:border-zinc-700 font-semibold"
+                >
+                  <FiRefreshCw className={`h-4 w-4 ${isStatsLoading || isDocsLoading ? 'animate-spin' : ''}`} /> Refresh
+                </button>
+              </div>
+
+              {/* DB Status Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Conn Card */}
+                <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-5 shadow-sm">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-extrabold ${dbStats?.connectionState === 'Connected' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-450'}`}>
+                    {dbStats?.connectionState === 'Connected' ? 'ON' : 'OFF'}
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider block">Status</span>
+                    <span className="text-lg font-bold text-zinc-900 dark:text-white capitalize">{dbStats?.connectionState || 'Checking...'}</span>
+                  </div>
+                </div>
+
+                {/* DB Name Card */}
+                <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-5 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <FiTerminal size={20} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider block">DB Name</span>
+                    <span className="text-lg font-bold text-zinc-900 dark:text-white block truncate">{dbStats?.dbName || 'N/A'}</span>
+                  </div>
+                </div>
+
+                {/* Users Count Card */}
+                <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-5 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <FiUsers size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider block">Users Count</span>
+                    <span className="text-lg font-bold text-zinc-900 dark:text-white block font-mono">
+                      {dbStats?.collections?.find(c => c.name === 'users')?.count ?? '0'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Blogs Count Card */}
+                <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-5 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                    <FiLayers size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider block">Blogs Count</span>
+                    <span className="text-lg font-bold text-zinc-900 dark:text-white block font-mono">
+                      {dbStats?.collections?.find(c => c.name === 'blogs')?.count ?? '0'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Maintenance Tools (Backup / Restore) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Backup Panel */}
+                <div className="bg-white dark:bg-zinc-900/40 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                    <FiDownload className="text-violet-500" /> Database Backup
+                  </h3>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                    Download a full JSON dump of the database (contains all registered users, profile details, and blog articles). Use this to keep offline backups of your platform.
+                  </p>
+                  <button 
+                    type="button"
+                    onClick={handleBackupDownload}
+                    disabled={isBackingUp}
+                    className="w-full sm:w-auto btn-primary rounded-xl px-6 py-3 font-semibold flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  >
+                    {isBackingUp ? 'Generating...' : 'Export DB to JSON'}
+                  </button>
+                </div>
+
+                {/* Restore Panel */}
+                <div className="bg-white dark:bg-zinc-900/40 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                    <FiUploadCloud className="text-rose-500" /> Database Restore
+                  </h3>
+                  <p className="text-sm text-rose-600 dark:text-rose-400 mb-6 font-medium">
+                    ⚠️ WARNING: Restoring will overwrite existing data. Make sure the JSON includes correct collections. An admin profile must be present in the uploaded file to avoid lockout.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <label className="w-full sm:w-auto px-6 py-3 bg-rose-550 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-450 rounded-xl transition-all border border-rose-200 dark:border-rose-500/20 font-semibold cursor-pointer text-center">
+                      Choose Backup File
+                      <input 
+                        type="file" 
+                        accept=".json" 
+                        onChange={handleFileImport}
+                        className="hidden" 
+                      />
+                    </label>
+                    {isRestoring && <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium animate-pulse">Restoring DB...</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Collections Document Explorer */}
+              <div className="bg-white dark:bg-zinc-900/40 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                {/* Header controls */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-zinc-200 dark:border-zinc-800/80 pb-6">
+                  {/* Left Tabs */}
+                  <div className="flex bg-zinc-100 dark:bg-zinc-800/80 p-1.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-700/45">
+                    <button 
+                      type="button"
+                      onClick={() => { setDbCollection('users'); setDbPage(1); }}
+                      className={`px-6 py-2.5 rounded-xl font-bold transition-all text-sm flex items-center gap-2 ${dbCollection === 'users' ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                    >
+                      <FiUsers size={16} /> Users Collection
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setDbCollection('blogs'); setDbPage(1); }}
+                      className={`px-6 py-2.5 rounded-xl font-bold transition-all text-sm flex items-center gap-2 ${dbCollection === 'blogs' ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                    >
+                      <FiLayers size={16} /> Blogs Collection
+                    </button>
+                  </div>
+
+                  {/* Right Actions */}
+                  <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-stretch sm:items-center">
+                    {/* Search bar */}
+                    <input 
+                      type="text" 
+                      placeholder={`Search in ${dbCollection}...`}
+                      value={dbSearch}
+                      onChange={(e) => { setDbSearch(e.target.value); setDbPage(1); }}
+                      className="input-field py-2.5 px-4 text-sm rounded-xl w-full sm:w-64"
+                    />
+                    
+                    {/* Add Document button */}
+                    <button 
+                      type="button"
+                      onClick={handleAddDocClick}
+                      className="btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+                    >
+                      <FiPlus size={16} /> Add Document
+                    </button>
+                  </div>
+                </div>
+
+                {/* Collection Records View */}
+                {isDocsLoading ? (
+                  <div className="text-center py-20 text-zinc-500 animate-pulse">Loading documents...</div>
+                ) : !dbDocsData?.documents || dbDocsData.documents.length === 0 ? (
+                  <div className="text-center py-16 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-200 dark:border-zinc-700 border-dashed">
+                    <FiDatabase size={32} className="mx-auto text-zinc-400 dark:text-zinc-500 mb-3" />
+                    <h3 className="text-zinc-900 dark:text-white font-semibold mb-1">No Documents Found</h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-sm">No items matched your query in this collection.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Document List */}
+                    <div className="divide-y divide-zinc-200 dark:divide-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-transparent">
+                      {dbDocsData.documents.map((doc) => (
+                        <div key={doc._id} className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          {/* Document Metadata Summary */}
+                          <div className="flex items-start gap-4 flex-grow overflow-hidden">
+                            {dbCollection === 'users' ? (
+                              <img 
+                                src={getImageUrl(doc.avatar, doc.name)} 
+                                onError={handleImgError(doc.name)}
+                                className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-700 object-cover flex-shrink-0" 
+                                alt="" 
+                              />
+                            ) : (
+                              <img 
+                                src={getImageUrl(doc.coverImage)} 
+                                className="w-16 h-12 rounded-xl object-cover border border-zinc-200 dark:border-zinc-700 flex-shrink-0" 
+                                alt="" 
+                              />
+                            )}
+                            <div className="space-y-1 overflow-hidden w-full">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-xs px-2.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md font-semibold select-all">
+                                  {doc._id}
+                                </span>
+                                {dbCollection === 'users' ? (
+                                  <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${doc.role === 'admin' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                    {doc.role}
+                                  </span>
+                                ) : (
+                                  <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${doc.isPublished ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'}`}>
+                                    {doc.isPublished ? 'Published' : 'Draft'}
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="font-bold text-zinc-900 dark:text-white truncate max-w-lg">
+                                {dbCollection === 'users' ? doc.name : doc.title}
+                              </h4>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate">
+                                {dbCollection === 'users' ? doc.email : `Category: ${doc.category} • Views: ${doc.views}`}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Quick Admin Actions */}
+                          <div className="flex items-center gap-3 self-end md:self-auto flex-shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => handleEditDocClick(doc)}
+                              className="p-2.5 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-xl transition-all border border-transparent hover:border-violet-200 dark:hover:border-violet-500/20"
+                              title="Edit raw JSON"
+                            >
+                              <FiEdit size={17} />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteDbDoc(doc._id)}
+                              disabled={dbCollection === 'users' && doc._id === userInfo._id}
+                              className="p-2.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500 dark:text-rose-400 rounded-xl transition-all border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Delete document"
+                            >
+                              <FiTrash2 size={17} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {dbDocsData.pages > 1 && (
+                      <div className="flex justify-between items-center pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">
+                          Page {dbPage} of {dbDocsData.pages} ({dbDocsData.total} docs)
+                        </span>
+                        <div className="flex gap-2">
+                          <button 
+                            type="button"
+                            onClick={() => setDbPage(p => Math.max(1, p - 1))}
+                            disabled={dbPage === 1}
+                            className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-bold transition-all border border-zinc-200 dark:border-zinc-700"
+                          >
+                            Prev
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setDbPage(p => Math.min(dbDocsData.pages, p + 1))}
+                            disabled={dbPage === dbDocsData.pages}
+                            className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-bold transition-all border border-zinc-200 dark:border-zinc-700"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 
@@ -574,6 +1214,97 @@ const DashboardPage = () => {
           )}
         </div>
       </div>
+
+      {/* Safety Database Restore Modal */}
+      {isRestoreModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 max-w-md w-full p-8 shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-rose-500"></div>
+            <div>
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">Confirm Database Restore</h3>
+              <p className="text-sm text-rose-600 font-semibold mb-4 leading-relaxed">
+                ⚠️ THIS ACTION IS EXTREMELY DANGEROUS! All current users and articles on the platform will be deleted permanently and replaced by the data in your backup file.
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                To confirm and apply this change, please type <strong className="font-bold text-zinc-900 dark:text-white">"RESTORE"</strong> in the field below. After completion, you will be logged out to refresh status.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <input 
+                type="text" 
+                placeholder="Type RESTORE to confirm"
+                value={restoreConfirmationText}
+                onChange={(e) => setRestoreConfirmationText(e.target.value)}
+                className="input-field rounded-xl font-mono text-center font-bold tracking-wider"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                type="button"
+                onClick={() => { setIsRestoreModalOpen(false); setRestoreFileJson(null); }}
+                className="flex-1 btn-secondary py-3 rounded-xl font-bold"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={handleConfirmRestore}
+                disabled={restoreConfirmationText !== 'RESTORE' || isRestoring}
+                className="flex-1 bg-rose-550 hover:bg-rose-600 disabled:bg-rose-500/30 text-white py-3 rounded-xl font-bold transition-all disabled:cursor-not-allowed"
+              >
+                {isRestoring ? 'Restoring...' : 'Confirm Restore'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* JSON Document Editor Modal */}
+      {isDbModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 max-w-2xl w-full p-8 shadow-2xl space-y-6 relative overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-violet-500"></div>
+            
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-extrabold text-zinc-900 dark:text-white capitalize">
+                {dbModalMode === 'create' ? 'Add New Document' : 'Edit Raw JSON Document'}
+              </h3>
+              <span className="font-mono text-xs px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md font-semibold select-none">
+                {dbCollection} Collection
+              </span>
+            </div>
+
+            <div className="flex-grow flex flex-col space-y-2 min-h-0">
+              <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Edit document raw fields in JSON format:</label>
+              <textarea 
+                value={rawJsonText}
+                onChange={(e) => setRawJsonText(e.target.value)}
+                className="flex-grow w-full h-80 min-h-0 font-mono text-sm p-4 bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-850 rounded-2xl focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 dark:text-zinc-200 resize-none overflow-y-auto leading-relaxed"
+                placeholder="{}"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                type="button"
+                onClick={() => setIsDbModalOpen(false)}
+                className="flex-1 btn-secondary py-3 rounded-xl font-bold"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={handleSaveDbDoc}
+                className="flex-1 btn-primary py-3 rounded-xl font-bold shadow-md shadow-violet-500/10"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

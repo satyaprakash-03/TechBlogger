@@ -38,6 +38,20 @@ export const blogsApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Blog'],
     }),
+    likeBlog: builder.mutation({
+      query: (id) => ({
+        url: `/api/blogs/${id}/like`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Blog'],
+    }),
+    subscribeNewsletter: builder.mutation({
+      query: (email) => ({
+        url: '/api/newsletter/subscribe',
+        method: 'POST',
+        body: { email },
+      }),
+    }),
   }),
 });
 
@@ -48,4 +62,6 @@ export const {
   useCreateBlogMutation,
   useUpdateBlogMutation,
   useDeleteBlogMutation,
+  useLikeBlogMutation,
+  useSubscribeNewsletterMutation,
 } = blogsApiSlice;

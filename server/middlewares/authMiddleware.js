@@ -21,7 +21,7 @@ const protect = async (req, res, next) => {
 };
 
 const admin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && req.user.role === 'admin' && req.user.email === 'satyaprakash.in33@gmail.com') {
     next();
   } else {
     res.status(401).json({ message: 'Not authorized as admin' });
