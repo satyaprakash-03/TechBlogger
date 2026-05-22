@@ -13,7 +13,7 @@ import {
 } from '../redux/slices/adminApiSlice';
 import { setCredentials } from '../redux/slices/authSlice';
 import { toast } from 'react-toastify';
-import { FiPlus, FiList, FiSettings, FiPieChart, FiEye, FiHeart, FiMessageSquare, FiUpload, FiLinkedin, FiGithub, FiGlobe, FiLayers, FiUsers, FiDatabase, FiRefreshCw, FiDownload, FiUploadCloud, FiTrash2, FiEdit, FiTerminal } from 'react-icons/fi';
+import { FiPlus, FiList, FiSettings, FiPieChart, FiEye, FiHeart, FiMessageSquare, FiUpload, FiLinkedin, FiGithub, FiGlobe, FiLayers, FiUsers, FiDatabase, FiRefreshCw, FiDownload, FiUploadCloud, FiTrash2, FiEdit, FiTerminal, FiMail } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import ReactQuill from 'react-quill-new';
@@ -45,6 +45,17 @@ const DashboardPage = () => {
   const [dbSearch, setDbSearch] = useState('');
   const [dbPage, setDbPage] = useState(1);
   const [dbLimit] = useState(10);
+
+  // Subscribers tab hooks & states
+  const [subSearch, setSubSearch] = useState('');
+  const [subPage, setSubPage] = useState(1);
+  const [subLimit] = useState(10);
+  const [newSubEmail, setNewSubEmail] = useState('');
+
+  const { data: subscribersData, refetch: refetchSubscribers, isLoading: isSubsLoading } = useGetCollectionDocumentsQuery(
+    { collectionName: 'subscribers', search: subSearch, page: subPage, limit: subLimit },
+    { skip: !isAdmin || activeTab !== 'subscribers' }
+  );
 
   const { data: dbDocsData, refetch: refetchDbDocs, isLoading: isDocsLoading } = useGetCollectionDocumentsQuery(
     { collectionName: dbCollection, search: dbSearch, page: dbPage, limit: dbLimit },
@@ -309,6 +320,8 @@ const DashboardPage = () => {
       designation: '',
       bio: '',
       avatar: ''
+    } : dbCollection === 'subscribers' ? {
+      email: ''
     } : {
       title: '',
       excerpt: '',
@@ -369,6 +382,33 @@ const DashboardPage = () => {
       } catch (err) {
         toast.error(err?.data?.message || "Failed to delete document.");
       }
+    }
+  };
+
+  const handleSubscriberDelete = async (id) => {
+    if (window.confirm('Are you sure you want to remove this email from the subscribers list?')) {
+      try {
+        await deleteCollectionDoc({ collectionName: 'subscribers', id }).unwrap();
+        toast.success('Subscriber deleted successfully!');
+        refetchSubscribers();
+        refetchDbStats();
+      } catch (err) {
+        toast.error(err?.data?.message || 'Failed to delete subscriber');
+      }
+    }
+  };
+
+  const handleAddSubscriberSubmit = async (e) => {
+    e.preventDefault();
+    if (!newSubEmail.trim()) return;
+    try {
+      await createCollectionDoc({ collectionName: 'subscribers', data: { email: newSubEmail.trim() } }).unwrap();
+      toast.success('Subscriber added successfully!');
+      setNewSubEmail('');
+      refetchSubscribers();
+      refetchDbStats();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to add subscriber');
     }
   };
 
@@ -457,6 +497,12 @@ const DashboardPage = () => {
                     className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'users' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
                   >
                     <FiUsers size={18} /> Manage Users
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('subscribers')}
+                    className={`flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium ${activeTab === 'subscribers' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/60'}`}
+                  >
+                    <FiMail size={18} /> Manage Subscribers
                   </button>
                   <button 
                     onClick={() => setActiveTab('db-admin')}
@@ -748,6 +794,126 @@ const DashboardPage = () => {
             </motion.div>
           )}
 
+          {activeTab === 'subscribers' && isAdmin && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-zinc-900/40 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 pb-6 border-b border-zinc-200 dark:border-zinc-800/80">
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-1 flex items-center gap-2.5">
+                    <FiMail className="text-violet-500" /> Newsletter Subscribers
+                  </h2>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">View, search, add, or remove subscribers for the platform newsletter.</p>
+                </div>
+
+                {/* Add Subscriber form */}
+                <form onSubmit={handleAddSubscriberSubmit} className="flex gap-3 w-full md:w-auto items-center">
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter email to subscribe..."
+                    value={newSubEmail}
+                    onChange={(e) => setNewSubEmail(e.target.value)}
+                    className="input-field py-2 px-4 text-sm rounded-xl w-full md:w-64"
+                  />
+                  <button type="submit" className="btn-primary rounded-xl px-5 py-2 text-sm font-semibold flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                    <FiPlus size={16} /> Add
+                  </button>
+                </form>
+              </div>
+
+              {/* Search subscriber */}
+              <div className="mb-6 flex justify-between items-center gap-4">
+                <input
+                  type="text"
+                  placeholder="Search subscribers by email..."
+                  value={subSearch}
+                  onChange={(e) => { setSubSearch(e.target.value); setSubPage(1); }}
+                  className="input-field py-2.5 px-4 text-sm rounded-xl w-full max-w-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => refetchSubscribers()}
+                  className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 text-zinc-800 dark:text-zinc-200 rounded-xl transition-all border border-zinc-200 dark:border-zinc-700 text-xs font-semibold"
+                >
+                  <FiRefreshCw className={`h-3.5 w-3.5 ${isSubsLoading ? 'animate-spin' : ''}`} /> Refresh
+                </button>
+              </div>
+
+              {/* Subscribers Table */}
+              {isSubsLoading ? (
+                <div className="text-center py-20 text-zinc-500 animate-pulse">Loading subscribers...</div>
+              ) : !subscribersData?.documents || subscribersData.documents.length === 0 ? (
+                <div className="text-center py-16 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-200 dark:border-zinc-700 border-dashed">
+                  <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 text-zinc-400 dark:text-zinc-500">
+                    <FiMail size={24} />
+                  </div>
+                  <h3 className="text-zinc-900 dark:text-white font-semibold mb-2">No Subscribers Found</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">No emails match your query or are currently subscribed.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                    <table className="w-full text-left text-sm text-zinc-600 dark:text-zinc-400">
+                      <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800">
+                        <tr>
+                          <th className="px-6 py-4 font-semibold">Subscriber Email</th>
+                          <th className="px-6 py-4 font-semibold">Subscribed Date</th>
+                          <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                        {subscribersData.documents.map((subscriber) => (
+                          <tr key={subscriber._id} className="hover:bg-zinc-50 dark:hover:bg-zinc-805 transition-colors bg-white dark:bg-transparent">
+                            <td className="px-6 py-4 font-medium text-zinc-900 dark:text-white select-all">
+                              {subscriber.email}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                              {subscriber.createdAt ? format(new Date(subscriber.createdAt), 'MMMM dd, yyyy - hh:mm a') : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => handleSubscriberDelete(subscriber._id)}
+                                className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-455 transition-colors font-semibold"
+                              >
+                                Delete Subscriber
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {subscribersData.pages > 1 && (
+                    <div className="flex justify-between items-center pt-4">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">
+                        Page {subPage} of {subscribersData.pages} ({subscribersData.total} subscribers)
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSubPage((p) => Math.max(1, p - 1))}
+                          disabled={subPage === 1}
+                          className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-bold transition-all border border-zinc-200 dark:border-zinc-700"
+                        >
+                          Prev
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSubPage((p) => Math.min(subscribersData.pages, p + 1))}
+                          disabled={subPage === subscribersData.pages}
+                          className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-bold transition-all border border-zinc-200 dark:border-zinc-700"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {activeTab === 'db-admin' && isAdmin && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
               {/* DB Header */}
@@ -768,7 +934,7 @@ const DashboardPage = () => {
               </div>
 
               {/* DB Status Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                 {/* Conn Card */}
                 <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-5 shadow-sm">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-extrabold ${dbStats?.connectionState === 'Connected' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-450'}`}>
@@ -813,6 +979,19 @@ const DashboardPage = () => {
                     <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider block">Blogs Count</span>
                     <span className="text-lg font-bold text-zinc-900 dark:text-white block font-mono">
                       {dbStats?.collections?.find(c => c.name === 'blogs')?.count ?? '0'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Subscribers Count Card */}
+                <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-5 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 flex items-center justify-center">
+                    <FiMail size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-zinc-400 font-medium uppercase tracking-wider block">Subscribers</span>
+                    <span className="text-lg font-bold text-zinc-900 dark:text-white block font-mono">
+                      {dbStats?.collections?.find(c => c.name === 'subscribers')?.count ?? '0'}
                     </span>
                   </div>
                 </div>
@@ -874,14 +1053,21 @@ const DashboardPage = () => {
                       onClick={() => { setDbCollection('users'); setDbPage(1); }}
                       className={`px-6 py-2.5 rounded-xl font-bold transition-all text-sm flex items-center gap-2 ${dbCollection === 'users' ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                     >
-                      <FiUsers size={16} /> Users Collection
+                      <FiUsers size={16} /> Users
                     </button>
                     <button 
                       type="button"
                       onClick={() => { setDbCollection('blogs'); setDbPage(1); }}
                       className={`px-6 py-2.5 rounded-xl font-bold transition-all text-sm flex items-center gap-2 ${dbCollection === 'blogs' ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
                     >
-                      <FiLayers size={16} /> Blogs Collection
+                      <FiLayers size={16} /> Blogs
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setDbCollection('subscribers'); setDbPage(1); }}
+                      className={`px-6 py-2.5 rounded-xl font-bold transition-all text-sm flex items-center gap-2 ${dbCollection === 'subscribers' ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+                    >
+                      <FiMail size={16} /> Subscribers
                     </button>
                   </div>
 
@@ -931,6 +1117,10 @@ const DashboardPage = () => {
                                 className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-700 object-cover flex-shrink-0" 
                                 alt="" 
                               />
+                            ) : dbCollection === 'subscribers' ? (
+                              <div className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-750 bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center flex-shrink-0">
+                                <FiMail size={18} />
+                              </div>
                             ) : (
                               <img 
                                 src={getImageUrl(doc.coverImage)} 
@@ -947,6 +1137,10 @@ const DashboardPage = () => {
                                   <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${doc.role === 'admin' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                                     {doc.role}
                                   </span>
+                                ) : dbCollection === 'subscribers' ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] uppercase font-extrabold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    Subscribed
+                                  </span>
                                 ) : (
                                   <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${doc.isPublished ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'}`}>
                                     {doc.isPublished ? 'Published' : 'Draft'}
@@ -954,10 +1148,10 @@ const DashboardPage = () => {
                                 )}
                               </div>
                               <h4 className="font-bold text-zinc-900 dark:text-white truncate max-w-lg">
-                                {dbCollection === 'users' ? doc.name : doc.title}
+                                {dbCollection === 'users' ? doc.name : (dbCollection === 'subscribers' ? doc.email : doc.title)}
                               </h4>
                               <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate">
-                                {dbCollection === 'users' ? doc.email : `Category: ${doc.category} • Views: ${doc.views}`}
+                                {dbCollection === 'users' ? doc.email : (dbCollection === 'subscribers' ? `Joined: ${doc.createdAt ? format(new Date(doc.createdAt), 'MMM dd, yyyy') : 'N/A'}` : `Category: ${doc.category} • Views: ${doc.views}`)}
                               </p>
                             </div>
                           </div>

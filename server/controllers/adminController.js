@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Blog = require('../models/Blog');
+const Subscriber = require('../models/Subscriber');
 const mongoose = require('mongoose');
 
 // @desc    Get database stats and collection counts
@@ -9,6 +10,7 @@ const getDbStats = async (req, res) => {
   try {
     const usersCount = await User.countDocuments();
     const blogsCount = await Blog.countDocuments();
+    const subscribersCount = await Subscriber.countDocuments();
     
     // Attempt to fetch DB connection parameters and disk sizes if supported
     const isConnected = mongoose.connection.readyState === 1;
@@ -18,7 +20,8 @@ const getDbStats = async (req, res) => {
       host: mongoose.connection.host || 'N/A',
       collections: [
         { name: 'users', count: usersCount },
-        { name: 'blogs', count: blogsCount }
+        { name: 'blogs', count: blogsCount },
+        { name: 'subscribers', count: subscribersCount }
       ]
     };
 
@@ -48,7 +51,8 @@ const getDbBackup = async (req, res) => {
   try {
     const users = await User.find({});
     const blogs = await Blog.find({});
-    res.json({ users, blogs });
+    const subscribers = await Subscriber.find({});
+    res.json({ users, blogs, subscribers });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -58,7 +62,7 @@ const getDbBackup = async (req, res) => {
 // @route   POST /api/admin/db/restore
 // @access  Private/Admin
 const restoreDb = async (req, res) => {
-  const { users, blogs } = req.body;
+  const { users, blogs, subscribers } = req.body;
   try {
     if (!Array.isArray(users) || !Array.isArray(blogs)) {
       return res.status(400).json({ message: 'Backup JSON must contain "users" and "blogs" arrays.' });
@@ -73,10 +77,14 @@ const restoreDb = async (req, res) => {
     // Wipe collections
     await User.deleteMany({});
     await Blog.deleteMany({});
+    await Subscriber.deleteMany({});
 
     // Restore data. Note: User.insertMany bypasses pre-save hook, saving password hashes as they are.
     await User.insertMany(users);
     await Blog.insertMany(blogs);
+    if (Array.isArray(subscribers) && subscribers.length > 0) {
+      await Subscriber.insertMany(subscribers);
+    }
 
     res.json({ message: 'Database restored successfully from backup.' });
   } catch (error) {
@@ -92,7 +100,7 @@ const getCollectionDocuments = async (req, res) => {
   const { search = '', page = 1, limit = 10 } = req.query;
 
   try {
-    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : null);
+    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : (collectionName === 'subscribers' ? Subscriber : null));
     if (!model) {
       return res.status(400).json({ message: 'Invalid collection name' });
     }
@@ -113,6 +121,10 @@ const getCollectionDocuments = async (req, res) => {
             { category: { $regex: search, $options: 'i' } },
             { excerpt: { $regex: search, $options: 'i' } }
           ]
+        };
+      } else if (collectionName === 'subscribers') {
+        query = {
+          email: { $regex: search, $options: 'i' }
         };
       }
     }
@@ -143,7 +155,7 @@ const createDocument = async (req, res) => {
   const data = req.body;
 
   try {
-    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : null);
+    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : (collectionName === 'subscribers' ? Subscriber : null));
     if (!model) {
       return res.status(400).json({ message: 'Invalid collection name' });
     }
@@ -165,7 +177,7 @@ const updateDocument = async (req, res) => {
   const data = req.body;
 
   try {
-    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : null);
+    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : (collectionName === 'subscribers' ? Subscriber : null));
     if (!model) {
       return res.status(400).json({ message: 'Invalid collection name' });
     }
@@ -217,7 +229,7 @@ const deleteDocument = async (req, res) => {
   const { collectionName, id } = req.params;
 
   try {
-    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : null);
+    const model = collectionName === 'users' ? User : (collectionName === 'blogs' ? Blog : (collectionName === 'subscribers' ? Subscriber : null));
     if (!model) {
       return res.status(400).json({ message: 'Invalid collection name' });
     }
