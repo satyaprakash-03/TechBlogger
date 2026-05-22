@@ -14,6 +14,13 @@ const readingTime = (content) => {
   return Math.max(1, Math.ceil(words / 200));
 };
 
+const formatDate = (dateString, formatStr = 'MMM dd, yyyy') => {
+  if (!dateString) return 'N/A';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return 'N/A';
+  return format(d, formatStr);
+};
+
 const CATEGORIES = ['All', 'Web Development', 'Mobile Dev', 'AI & Machine Learning', 'Data Science', 'Cloud Computing', 'DevOps', 'UI/UX Design', 'Cybersecurity', 'Blockchain', 'Game Development', 'Software Engineering', 'Embedded Systems'];
 
 export default function BlogsPage() {
@@ -97,7 +104,7 @@ export default function BlogsPage() {
                     <img src={getImageUrl(featured.author?.avatar, featured.author?.name)} onError={handleImgError(featured.author?.name)} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                     <div>
                       <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{featured.author?.name}</p>
-                      <p className="text-xs text-zinc-600">{format(new Date(featured.createdAt), 'MMM dd, yyyy')} · {readingTime(featured.content)} min read</p>
+                      <p className="text-xs text-zinc-600">{formatDate(featured.createdAt, 'MMM dd, yyyy')} · {readingTime(featured.content)} min read</p>
                     </div>
                   </div>
                   <span className="flex items-center gap-1.5 text-violet-400 text-sm font-semibold group-hover:gap-2.5 transition-all">
@@ -240,7 +247,7 @@ export default function BlogsPage() {
                           <img src={getImageUrl(blog.author?.avatar, blog.author?.name)} onError={handleImgError(blog.author?.name)} alt="" className="w-6 h-6 rounded-full object-cover border border-zinc-300 dark:border-zinc-700" />
                           <div>
                             <p className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">{blog.author?.name}</p>
-                            <p className="text-[9px] text-zinc-600">{format(new Date(blog.createdAt), 'MMM dd, yyyy')}</p>
+                            <p className="text-[9px] text-zinc-600">{formatDate(blog.createdAt, 'MMM dd, yyyy')}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2.5 text-[10px] text-zinc-600">
@@ -293,7 +300,7 @@ export default function BlogsPage() {
                         </div>
                         <span className="flex items-center gap-0.5"><FiClock size={9} /> {readingTime(blog.content)}m</span>
                         <span className="flex items-center gap-0.5"><FiEye size={9} /> {blog.views}</span>
-                        <span>{format(new Date(blog.createdAt), 'MMM dd')}</span>
+                        <span>{formatDate(blog.createdAt, 'MMM dd')}</span>
                       </div>
                     </div>
                     <FiArrowRight size={16} className="text-zinc-700 group-hover:text-violet-400 transition-colors self-center ml-2 flex-shrink-0" />

@@ -20,6 +20,13 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { getImageUrl, handleImgError } from '../utils/image';
 
+const formatDate = (dateString, formatStr = 'MMM dd, yyyy') => {
+  if (!dateString) return 'N/A';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return 'N/A';
+  return format(d, formatStr);
+};
+
 const DashboardPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
   const isAdmin = userInfo?.role === 'admin' && userInfo?.email === 'satyaprakash.in33@gmail.com';
@@ -581,7 +588,7 @@ const DashboardPage = () => {
                       <img src={getImageUrl(blog.coverImage)} className="w-16 h-16 rounded-xl object-cover" alt="cover" />
                       <div>
                         <h4 className="text-zinc-900 dark:text-white font-semibold line-clamp-1">{blog.title}</h4>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{format(new Date(blog.createdAt), 'MMM dd, yyyy')} • {blog.views} views</p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{formatDate(blog.createdAt, 'MMM dd, yyyy')} • {blog.views} views</p>
                       </div>
                     </div>
                     <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-bold border border-emerald-200 dark:border-emerald-500/20">Published</span>
@@ -632,7 +639,7 @@ const DashboardPage = () => {
                           <td className="px-6 py-4">
                             <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-700">{blog.category}</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">{format(new Date(blog.createdAt), 'MMM dd, yyyy')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">{formatDate(blog.createdAt, 'MMM dd, yyyy')}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-medium"><FiEye className="text-zinc-400 dark:text-zinc-500" /> {blog.views}</span>
@@ -693,7 +700,7 @@ const DashboardPage = () => {
                           <td className="px-6 py-4">
                             <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-700">{blog.category}</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">{format(new Date(blog.createdAt), 'MMM dd, yyyy')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-zinc-500 dark:text-zinc-400">{formatDate(blog.createdAt, 'MMM dd, yyyy')}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-medium"><FiEye className="text-zinc-400 dark:text-zinc-500" /> {blog.views}</span>

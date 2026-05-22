@@ -16,6 +16,13 @@ const readingTime = (content) => {
   return Math.max(1, Math.ceil(words / 200));
 };
 
+const formatDate = (dateString, formatStr = 'MMM dd, yyyy') => {
+  if (!dateString) return 'N/A';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return 'N/A';
+  return format(d, formatStr);
+};
+
 export default function SingleBlogPage() {
   const { id } = useParams();
   const { data: blog, isLoading, error } = useGetBlogDetailsQuery(id);
@@ -126,7 +133,7 @@ export default function SingleBlogPage() {
               <div className="grid grid-cols-2 md:flex md:flex-wrap gap-4 md:gap-6 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800 text-sm">
                 <div className="flex items-center text-zinc-600 dark:text-zinc-400 font-medium">
                   <FiCalendar className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <time dateTime={blog.createdAt}>{format(new Date(blog.createdAt), 'MMMM d, yyyy')}</time>
+                  <time dateTime={blog.createdAt}>{formatDate(blog.createdAt, 'MMMM d, yyyy')}</time>
                 </div>
                 <div className="flex items-center text-zinc-600 dark:text-zinc-400 font-medium">
                   <FiClock className="w-4 h-4 mr-2 flex-shrink-0" />
