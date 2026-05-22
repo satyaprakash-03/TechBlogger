@@ -31,6 +31,9 @@ const DashboardPage = () => {
   const [updateProfile, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [uploadImage, { isLoading: isUploading }] = useUploadImageMutation();
 
+  const [activeTab, setActiveTab] = useState('overview');
+  const [returnTab, setReturnTab] = useState('articles');
+
   // Admin-only RTK Query & Mutation Hooks
   const { data: users, refetch: refetchUsers } = useGetUsersQuery(undefined, { skip: !isAdmin });
   const [deleteUser] = useDeleteUserMutation();
@@ -76,9 +79,6 @@ const DashboardPage = () => {
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [restoreConfirmationText, setRestoreConfirmationText] = useState('');
   const [restoreFileJson, setRestoreFileJson] = useState(null);
-
-  const [activeTab, setActiveTab] = useState('overview');
-  const [returnTab, setReturnTab] = useState('articles');
   
   // Blog Form State
   const [editingBlogId, setEditingBlogId] = useState(null);
