@@ -104,6 +104,7 @@ const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (user) {
+      const oldEmail = user.email;
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
       user.avatar = req.body.avatar || user.avatar;
@@ -126,6 +127,26 @@ const updateUserProfile = async (req, res) => {
       }
 
       const updatedUser = await user.save();
+
+      // Sync subscriber email if it has changed
+      if (oldEmail !== updatedUser.email) {
+        try {
+          const Subscriber = require('../models/Subscriber');
+          const oldSub = await Subscriber.findOne({ email: oldEmail });
+          if (oldSub) {
+            const newSubExists = await Subscriber.findOne({ email: updatedUser.email });
+            if (newSubExists) {
+              await Subscriber.deleteOne({ email: oldEmail });
+            } else {
+              oldSub.email = updatedUser.email;
+              await oldSub.save();
+            }
+          }
+        } catch (subError) {
+          console.error('Subscriber sync error in updateUserProfile:', subError);
+        }
+      }
+
       res.json({
         _id: updatedUser._id,
         name: updatedUser.name,
@@ -158,12 +179,33 @@ const updateUserByAdmin = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (user) {
+      const oldEmail = user.email;
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
       user.role = req.body.role || user.role;
       user.designation = req.body.designation !== undefined ? req.body.designation : user.designation;
       
       const updatedUser = await user.save();
+
+      // Sync subscriber email if it has changed
+      if (oldEmail !== updatedUser.email) {
+        try {
+          const Subscriber = require('../models/Subscriber');
+          const oldSub = await Subscriber.findOne({ email: oldEmail });
+          if (oldSub) {
+            const newSubExists = await Subscriber.findOne({ email: updatedUser.email });
+            if (newSubExists) {
+              await Subscriber.deleteOne({ email: oldEmail });
+            } else {
+              oldSub.email = updatedUser.email;
+              await oldSub.save();
+            }
+          }
+        } catch (subError) {
+          console.error('Subscriber sync error in updateUserByAdmin:', subError);
+        }
+      }
+
       res.json({
         _id: updatedUser._id,
         name: updatedUser.name,

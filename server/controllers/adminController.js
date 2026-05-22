@@ -176,12 +176,34 @@ const updateDocument = async (req, res) => {
       return res.status(404).json({ message: 'Document not found' });
     }
 
+    const oldEmail = doc.email;
+
     // Assign data values
     Object.keys(data).forEach(key => {
       doc[key] = data[key];
     });
 
     const updatedDoc = await doc.save();
+
+    // Sync subscriber email if it's a User model and email has changed
+    if (collectionName === 'users' && oldEmail !== updatedDoc.email) {
+      try {
+        const Subscriber = require('../models/Subscriber');
+        const oldSub = await Subscriber.findOne({ email: oldEmail });
+        if (oldSub) {
+          const newSubExists = await Subscriber.findOne({ email: updatedDoc.email });
+          if (newSubExists) {
+            await Subscriber.deleteOne({ email: oldEmail });
+          } else {
+            oldSub.email = updatedDoc.email;
+            await oldSub.save();
+          }
+        }
+      } catch (subError) {
+        console.error('Subscriber sync error in updateDocument (admin):', subError);
+      }
+    }
+
     res.json(updatedDoc);
   } catch (error) {
     res.status(400).json({ message: error.message });
