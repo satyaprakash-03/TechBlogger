@@ -533,8 +533,12 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════ CONTACT US ═══════════════ */}
-      <section id="contact" className="border-t border-zinc-200 dark:border-zinc-800/60 bg-white dark:bg-[#09090b] py-24 px-5 md:px-8">
-        <div className="max-w-6xl mx-auto">
+      <section id="contact" className="border-y border-zinc-200 dark:border-zinc-800/60 bg-violet-50/40 dark:bg-zinc-900/20 py-24 px-5 md:px-8 relative overflow-hidden">
+        {/* Decorative background glow orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-500/5 dark:bg-pink-500/10 rounded-full blur-[80px] pointer-events-none translate-y-1/2" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <p className="text-violet-500 text-xs font-bold uppercase tracking-widest mb-2 flex justify-center items-center gap-2"><FiMail size={14} /> Get in touch</p>
             <h2 className="text-3xl md:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Contact Us</h2>
