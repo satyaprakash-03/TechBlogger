@@ -52,6 +52,28 @@ export const blogsApiSlice = apiSlice.injectEndpoints({
         body: { email },
       }),
     }),
+    addComment: builder.mutation({
+      query: ({ blogId, content }) => ({
+        url: `/api/blogs/${blogId}/comments`,
+        method: 'POST',
+        body: { content },
+      }),
+      invalidatesTags: ['Blog'],
+    }),
+    deleteComment: builder.mutation({
+      query: ({ blogId, commentId }) => ({
+        url: `/api/blogs/${blogId}/comments/${commentId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Blog'],
+    }),
+    likeComment: builder.mutation({
+      query: ({ blogId, commentId }) => ({
+        url: `/api/blogs/${blogId}/comments/${commentId}/like`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Blog'],
+    }),
   }),
 });
 
@@ -64,4 +86,7 @@ export const {
   useDeleteBlogMutation,
   useLikeBlogMutation,
   useSubscribeNewsletterMutation,
+  useAddCommentMutation,
+  useDeleteCommentMutation,
+  useLikeCommentMutation,
 } = blogsApiSlice;

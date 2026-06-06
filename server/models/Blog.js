@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const commentSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  content: { type: String, required: true },
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+}, { timestamps: true });
+
 const blogSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
@@ -11,6 +17,7 @@ const blogSchema = new mongoose.Schema({
   coverImage: { type: String, required: true },
   views: { type: Number, default: 0 },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  comments: [commentSchema],
   isPublished: { type: Boolean, default: true },
 }, { timestamps: true });
 

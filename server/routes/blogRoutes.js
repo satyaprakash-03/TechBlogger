@@ -1,6 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { getBlogs, getBlogById, createBlog, updateBlog, deleteBlog, likeBlog } = require('../controllers/blogController');
+const {
+  getBlogs,
+  getBlogById,
+  createBlog,
+  updateBlog,
+  deleteBlog,
+  likeBlog,
+  addComment,
+  deleteComment,
+  likeComment
+} = require('../controllers/blogController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 
 router.route('/')
@@ -14,5 +24,14 @@ router.route('/:id')
 
 router.route('/:id/like')
   .post(protect, likeBlog);
+
+router.route('/:id/comments')
+  .post(protect, addComment);
+
+router.route('/:id/comments/:commentId')
+  .delete(protect, deleteComment);
+
+router.route('/:id/comments/:commentId/like')
+  .post(protect, likeComment);
 
 module.exports = router;

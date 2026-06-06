@@ -1,14 +1,21 @@
 import { useParams, Link } from 'react-router-dom';
-import { useGetBlogDetailsQuery, useGetBlogsQuery, useLikeBlogMutation } from '../redux/slices/blogsApiSlice';
+import { 
+  useGetBlogDetailsQuery, 
+  useGetBlogsQuery, 
+  useLikeBlogMutation,
+  useAddCommentMutation,
+  useDeleteCommentMutation,
+  useLikeCommentMutation
+} from '../redux/slices/blogsApiSlice';
 import { useSelector } from 'react-redux';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { getImageUrl, handleImgError } from '../utils/image';
 import {
   FiArrowLeft, FiClock, FiEye, FiHeart, FiBookmark,
   FiTwitter, FiGithub, FiLinkedin, FiCopy, FiCheck, FiList,
-  FiChevronRight, FiArrowRight, FiCalendar
+  FiChevronRight, FiArrowRight, FiCalendar, FiTrash2
 } from 'react-icons/fi';
 
 const readingTime = (content) => {
@@ -32,11 +39,15 @@ export default function SingleBlogPage() {
 
   const { userInfo } = useSelector((state) => state.auth);
   const [likeBlog] = useLikeBlogMutation();
+  const [addComment, { isLoading: isAddingComment }] = useAddCommentMutation();
+  const [deleteComment] = useDeleteCommentMutation();
+  const [likeComment] = useLikeCommentMutation();
 
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [tocItems, setTocItems] = useState([]);
   const [activeId, setActiveId] = useState('');
+  const [commentContent, setCommentContent] = useState('');
   const contentRef = useRef(null);
 
   const rt = readingTime(blog?.content);
@@ -48,6 +59,47 @@ export default function SingleBlogPage() {
       await likeBlog(id).unwrap();
     } catch (err) {
       console.error('Failed to like blog:', err);
+    }
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!commentContent.trim()) return;
+    try {
+      await addComment({ blogId: id, content: commentContent.trim() }).unwrap();
+      setCommentContent('');
+    } catch (err) {
+      console.error('Failed to post comment:', err);
+    }
+  };
+
+  const handleCommentLike = async (commentId) => {
+    if (!userInfo) return;
+    try {
+      await likeComment({ blogId: id, commentId }).unwrap();
+    } catch (err) {
+      console.error('Failed to like comment:', err);
+    }
+  };
+
+  const handleCommentDelete = async (commentId) => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      try {
+        await deleteComment({ blogId: id, commentId }).unwrap();
+      } catch (err) {
+        console.error('Failed to delete comment:', err);
+      }
+    }
+  };
+
+  const formatCommentDate = (dateString) => {
+    if (!dateString) return 'just now';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return 'just now';
+    try {
+      return formatDistanceToNow(d) + ' ago';
+    } catch (e) {
+      return 'just now';
     }
   };
 
@@ -181,65 +233,108 @@ export default function SingleBlogPage() {
             {/* Comments Section */}
             <div className="mt-16 pt-10 border-t border-zinc-200 dark:border-zinc-800">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-2">
-                Comments <span className="bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 text-sm py-0.5 px-2.5 rounded-full">3</span>
+                Comments <span className="bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 text-sm py-0.5 px-2.5 rounded-full">{blog.comments?.length || 0}</span>
               </h3>
 
               {/* Comment Input */}
-              <div className="flex gap-4 mb-10">
-                <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 font-bold flex-shrink-0">
-                  U
-                </div>
-                <div className="flex-grow">
-                  <textarea 
-                    placeholder="Write a comment..." 
-                    className="w-full bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 resize-none transition-all"
-                    rows="3"
-                  ></textarea>
-                  <div className="flex justify-end mt-3">
-                    <button className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
-                      Post Comment
-                    </button>
+              {userInfo ? (
+                <form onSubmit={handleCommentSubmit} className="flex gap-4 mb-10">
+                  <img 
+                    src={getImageUrl(userInfo.avatar, userInfo.name)} 
+                    onError={handleImgError(userInfo.name)}
+                    alt={userInfo.name} 
+                    className="w-10 h-10 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 flex-shrink-0" 
+                  />
+                  <div className="flex-grow">
+                    <textarea 
+                      value={commentContent}
+                      onChange={(e) => setCommentContent(e.target.value)}
+                      placeholder="Write a comment..." 
+                      className="w-full bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 resize-none transition-all"
+                      rows="3"
+                    ></textarea>
+                    <div className="flex justify-end mt-3">
+                      <button 
+                        type="submit" 
+                        disabled={isAddingComment || !commentContent.trim()}
+                        className="bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                      >
+                        {isAddingComment ? 'Posting...' : 'Post Comment'}
+                      </button>
+                    </div>
                   </div>
+                </form>
+              ) : (
+                <div className="bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 text-center mb-10">
+                  <p className="text-zinc-600 dark:text-zinc-400 mb-4">Join the conversation! Log in to write a comment.</p>
+                  <Link 
+                    to={`/login?redirect=/blogs/${id}`} 
+                    className="inline-flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors"
+                  >
+                    Log In to Comment
+                  </Link>
                 </div>
-              </div>
+              )}
 
-              {/* Comments List (Static UI) */}
+              {/* Comments List (Dynamic UI) */}
               <div className="space-y-8">
-                {/* Comment 1 */}
-                <div className="flex gap-4">
-                  <img src="https://i.pravatar.cc/150?u=1" alt="User" className="w-10 h-10 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <h4 className="font-bold text-gray-900 dark:text-white">Alex Johnson</h4>
-                      <span className="text-xs text-zinc-500">2 hours ago</span>
-                    </div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
-                      This is exactly what I was looking for! The explanation about folder structure really cleared up my confusion. Thanks for sharing this.
-                    </p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <button className="text-xs font-semibold text-zinc-500 hover:text-violet-600 transition-colors">Reply</button>
-                      <button className="text-xs font-semibold text-zinc-500 hover:text-pink-600 transition-colors flex items-center gap-1"><FiHeart size={12} /> 12</button>
-                    </div>
-                  </div>
-                </div>
+                {blog.comments && blog.comments.length > 0 ? (
+                  blog.comments.map((comment) => {
+                    const isCommentLiked = userInfo && comment.likes?.includes(userInfo._id);
+                    const canDelete = userInfo && (
+                      comment.user?._id === userInfo._id ||
+                      blog.author?._id === userInfo._id ||
+                      userInfo.role === 'admin'
+                    );
 
-                {/* Comment 2 */}
-                <div className="flex gap-4">
-                  <img src="https://i.pravatar.cc/150?u=2" alt="User" className="w-10 h-10 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <h4 className="font-bold text-gray-900 dark:text-white">Sarah Williams</h4>
-                      <span className="text-xs text-zinc-500">1 day ago</span>
-                    </div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
-                      Great article. Would love to see a follow-up post about database integration using TypeORM or Prisma with this setup!
-                    </p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <button className="text-xs font-semibold text-zinc-500 hover:text-violet-600 transition-colors">Reply</button>
-                      <button className="text-xs font-semibold text-zinc-500 hover:text-pink-600 transition-colors flex items-center gap-1"><FiHeart size={12} /> 5</button>
-                    </div>
-                  </div>
-                </div>
+                    return (
+                      <div key={comment._id} className="flex gap-4 group">
+                        <img 
+                          src={getImageUrl(comment.user?.avatar, comment.user?.name)} 
+                          onError={handleImgError(comment.user?.name)}
+                          alt={comment.user?.name || 'User'} 
+                          className="w-10 h-10 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 flex-shrink-0" 
+                        />
+                        <div className="flex-grow">
+                          <div className="flex items-baseline justify-between gap-2 mb-1">
+                            <div className="flex items-baseline gap-2">
+                              <h4 className="font-bold text-gray-900 dark:text-white">{comment.user?.name || 'Deleted User'}</h4>
+                              <span className="text-xs text-zinc-500">{formatCommentDate(comment.createdAt)}</span>
+                            </div>
+                            {canDelete && (
+                              <button 
+                                onClick={() => handleCommentDelete(comment._id)} 
+                                className="text-xs font-medium text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                                title="Delete comment"
+                              >
+                                <FiTrash2 size={13} /> Delete
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed whitespace-pre-line">
+                            {comment.content}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <button 
+                              onClick={() => handleCommentLike(comment._id)}
+                              disabled={!userInfo}
+                              className={`text-xs font-semibold flex items-center gap-1 transition-colors ${
+                                isCommentLiked 
+                                  ? 'text-pink-500 hover:text-pink-600' 
+                                  : 'text-zinc-500 hover:text-pink-500'
+                              }`}
+                              title={!userInfo ? "Log in to like comment" : ""}
+                            >
+                              <FiHeart size={12} className={isCommentLiked ? 'fill-current' : ''} /> {comment.likes?.length || 0}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-zinc-500 text-center py-6">No comments yet. Be the first to share your thoughts!</p>
+                )}
               </div>
             </div>
 

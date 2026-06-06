@@ -12,7 +12,9 @@ const getBlogs = async (req, res) => {
 
 const getBlogById = async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id).populate('author', 'name avatar socialLinks designation bio');
+    const blog = await Blog.findById(req.params.id)
+      .populate('author', 'name avatar socialLinks designation bio')
+      .populate('comments.user', 'name avatar');
     if (blog) {
       res.json(blog);
       // Asynchronously update views in the background
@@ -231,4 +233,118 @@ const likeBlog = async (req, res) => {
   }
 };
 
-module.exports = { getBlogs, getBlogById, createBlog, updateBlog, deleteBlog, likeBlog };
+const addComment = async (req, res) => {
+  const { content } = req.body;
+  if (!content || content.trim() === '') {
+    return res.status(400).json({ message: 'Comment content is required' });
+  }
+
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    const newComment = {
+      user: req.user._id,
+      content: content.trim(),
+      likes: []
+    };
+
+    blog.comments.push(newComment);
+    await blog.save();
+
+    const updatedBlog = await Blog.findById(req.params.id)
+      .populate('comments.user', 'name avatar');
+
+    // Send notification to blog author if comment author is someone else
+    if (blog.author.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        receiver: blog.author,
+        sender: req.user._id,
+        type: 'comment',
+        title: 'New Comment',
+        message: `${req.user.name} commented on your blog "${blog.title}"`,
+        link: `/blogs/${blog._id}`
+      });
+    }
+
+    res.status(201).json(updatedBlog.comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteComment = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    const comment = blog.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const isAdmin = req.user && req.user.role === 'admin' && req.user.email === 'satyaprakash.in33@gmail.com';
+    const isCommentAuthor = comment.user.toString() === req.user._id.toString();
+    const isBlogAuthor = blog.author.toString() === req.user._id.toString();
+
+    if (!isCommentAuthor && !isBlogAuthor && !isAdmin) {
+      return res.status(401).json({ message: 'Not authorized to delete this comment' });
+    }
+
+    comment.deleteOne();
+    await blog.save();
+
+    const updatedBlog = await Blog.findById(req.params.id)
+      .populate('comments.user', 'name avatar');
+
+    res.json(updatedBlog.comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const likeComment = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    const comment = blog.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const isLiked = comment.likes.some(id => id.toString() === req.user._id.toString());
+    if (isLiked) {
+      comment.likes = comment.likes.filter(id => id.toString() !== req.user._id.toString());
+    } else {
+      comment.likes.push(req.user._id);
+    }
+
+    await blog.save();
+
+    const updatedBlog = await Blog.findById(req.params.id)
+      .populate('comments.user', 'name avatar');
+
+    res.json(updatedBlog.comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getBlogs,
+  getBlogById,
+  createBlog,
+  updateBlog,
+  deleteBlog,
+  likeBlog,
+  addComment,
+  deleteComment,
+  likeComment
+};
