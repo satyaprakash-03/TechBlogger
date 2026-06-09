@@ -43,7 +43,49 @@ export const blogsApiSlice = apiSlice.injectEndpoints({
         url: `/api/blogs/${id}/like`,
         method: 'POST',
       }),
-      invalidatesTags: ['Blog'],
+      async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
+        const userInfo = getState().auth.userInfo;
+        if (!userInfo) return;
+        const userId = userInfo._id;
+
+        // 1. Optimistically update getBlogDetails
+        const patchResultDetails = dispatch(
+          blogsApiSlice.util.updateQueryData('getBlogDetails', id, (draft) => {
+            if (draft && draft.likes) {
+              const index = draft.likes.indexOf(userId);
+              if (index > -1) {
+                draft.likes.splice(index, 1);
+              } else {
+                draft.likes.push(userId);
+              }
+            }
+          })
+        );
+
+        // 2. Optimistically update getBlogs list
+        const patchResultList = dispatch(
+          blogsApiSlice.util.updateQueryData('getBlogs', undefined, (draft) => {
+            if (Array.isArray(draft)) {
+              const blog = draft.find(b => b._id === id);
+              if (blog && blog.likes) {
+                const index = blog.likes.indexOf(userId);
+                if (index > -1) {
+                  blog.likes.splice(index, 1);
+                } else {
+                  blog.likes.push(userId);
+                }
+              }
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResultDetails.undo();
+          patchResultList.undo();
+        }
+      },
     }),
     subscribeNewsletter: builder.mutation({
       query: (email) => ({
@@ -58,21 +100,112 @@ export const blogsApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: { content },
       }),
-      invalidatesTags: ['Blog'],
+      async onQueryStarted({ blogId, content }, { dispatch, queryFulfilled, getState }) {
+        const userInfo = getState().auth.userInfo;
+        if (!userInfo) return;
+
+        const tempCommentId = 'temp-' + Date.now();
+        const tempComment = {
+          _id: tempCommentId,
+          content: content.trim(),
+          likes: [],
+          createdAt: new Date().toISOString(),
+          user: {
+            _id: userInfo._id,
+            name: userInfo.name,
+            avatar: userInfo.avatar
+          }
+        };
+
+        const patchResult = dispatch(
+          blogsApiSlice.util.updateQueryData('getBlogDetails', blogId, (draft) => {
+            if (draft && draft.comments) {
+              draft.comments.push(tempComment);
+            }
+          })
+        );
+
+        try {
+          const { data: updatedComments } = await queryFulfilled;
+          dispatch(
+            blogsApiSlice.util.updateQueryData('getBlogDetails', blogId, (draft) => {
+              if (draft) {
+                draft.comments = updatedComments;
+              }
+            })
+          );
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
     deleteComment: builder.mutation({
       query: ({ blogId, commentId }) => ({
         url: `/api/blogs/${blogId}/comments/${commentId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Blog'],
+      async onQueryStarted({ blogId, commentId }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          blogsApiSlice.util.updateQueryData('getBlogDetails', blogId, (draft) => {
+            if (draft && draft.comments) {
+              draft.comments = draft.comments.filter(c => c._id !== commentId);
+            }
+          })
+        );
+
+        try {
+          const { data: updatedComments } = await queryFulfilled;
+          dispatch(
+            blogsApiSlice.util.updateQueryData('getBlogDetails', blogId, (draft) => {
+              if (draft) {
+                draft.comments = updatedComments;
+              }
+            })
+          );
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
     likeComment: builder.mutation({
       query: ({ blogId, commentId }) => ({
         url: `/api/blogs/${blogId}/comments/${commentId}/like`,
         method: 'POST',
       }),
-      invalidatesTags: ['Blog'],
+      async onQueryStarted({ blogId, commentId }, { dispatch, queryFulfilled, getState }) {
+        const userInfo = getState().auth.userInfo;
+        if (!userInfo) return;
+        const userId = userInfo._id;
+
+        const patchResult = dispatch(
+          blogsApiSlice.util.updateQueryData('getBlogDetails', blogId, (draft) => {
+            if (draft && draft.comments) {
+              const comment = draft.comments.find(c => c._id === commentId);
+              if (comment && comment.likes) {
+                const index = comment.likes.indexOf(userId);
+                if (index > -1) {
+                  comment.likes.splice(index, 1);
+                } else {
+                  comment.likes.push(userId);
+                }
+              }
+            }
+          })
+        );
+
+        try {
+          const { data: updatedComments } = await queryFulfilled;
+          dispatch(
+            blogsApiSlice.util.updateQueryData('getBlogDetails', blogId, (draft) => {
+              if (draft) {
+                draft.comments = updatedComments;
+              }
+            })
+          );
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
   }),
 });
